@@ -1,14 +1,14 @@
 #lang racket
 
 
-(define B1 '((BR BH BB BQ BK BB BH BR)
-             (BP BP BP BP BP BP BP BP)
-             (-- -- -- -- -- -- -- --)
-             (-- -- -- -- -- -- -- --)
-             (-- -- -- -- -- -- -- --)
-             (-- -- -- -- -- -- -- --)
+(define B1 '((WR WH WB WQ WK WB WH WR)
              (WP WP WP WP WP WP WP WP)
-             (WR WH WB WQ WK WB WH WR)))
+             (-- -- -- -- -- -- -- --)
+             (-- -- -- -- -- -- -- --)
+             (-- -- -- -- -- -- -- --)
+             (-- -- -- -- -- -- -- --)
+             (BP BP BP BP BP BP BP BP)
+             (BR BH BB BQ BK BB BH BR)))
 
 ;legend:
 ;king => K
@@ -22,6 +22,18 @@
 ;prefix:
 ;black piece => B
 ;white piece => W
+
+;movement
+
+;(define (possibleMoves B color)
+;  (append (possiblePawnMoves B color)
+;           (possibleBishopMoves B color)
+;           (possibleKhightMoves B color)
+;           (possibleRookMoves B color)
+;           (possibleQueenMoves B color)
+;           (possibleKingMoves B color)))
+
+;(define (possiblePawnMoves B color))
 
 
 ;movement checks
@@ -40,6 +52,13 @@
           (printBoard (rest B)))))
 
 ;board operations
+(define (findPosOfAll B target Xpos Ypos)
+  (cond
+    ((= Ypos 8) '())
+    ((= Xpos 8) (findPosOfAll B target 0 (add1 Ypos)))
+    ((equal? (tileAt B Xpos Ypos) target) (cons (list Xpos Ypos) (findPosOfAll B target (add1 Xpos) Ypos)))
+    (else (findPosOfAll B target (add1 Xpos) Ypos))))
+
 (define (updateBoard B Xpos Ypos input)
   (cond
     ((= Ypos 0) (cons (updateCol (first B) Xpos input) (rest B)))
@@ -50,7 +69,7 @@
     ((= Xpos 0) (cons input (rest L)))
     (else (cons (first L) (updateCol (rest L) (sub1 Xpos) input)))))
 
-(define (ClearTileAt B Xpos Ypos)
+(define (clearTileAt B Xpos Ypos)
   (cond
     ((legalTile? B Xpos Ypos) (updateBoard B Xpos Ypos '-))
     (else (print '(invalid tile)))))
