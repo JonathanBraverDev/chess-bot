@@ -33,11 +33,22 @@
 ;           (possibleQueenMoves B color)
 ;           (possibleKingMoves B color)))
 
-;(define (possiblePawnMoves B color))
+(define (possiblePawnMoves B color)
+  (append (map (findPosOfAll B1 'BP 0 0))))
+
+(define (pawnMoves B Xpos Ypos side) ;side will invert the movement (its the color...)
+  (cond))
+
+
+(define (lookUp B Xpos Ypos [maxRange 8]) ;negative tiles will cause it to look down ;)
+  (cond
+    ((zero? maxRange) '())
+    ((or (not (legalTile? Xpos Ypos)) (not (emptyTile? Xpos Ypos))) '())
+    (else (cons (list Xpos Ypos) (lookUp B (add1 Xpos)Ypos [maxRange 8])))))
 
 
 ;movement checks
-(define (emptyTileAt? B Xpos Ypos)
+(define (emptyTile? B Xpos Ypos)
   (equal? (tileAt B Xpos Ypos) '-))
 
 (define (legalTile? B Xpos Ypos)
