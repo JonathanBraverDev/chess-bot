@@ -1,5 +1,7 @@
 #lang racket
 
+;(define WR '(W R))
+
 
 (define B1 '((WR WH WB WQ WK WB WH WR)
              (WP WP WP WP WP WP WP WP)
@@ -36,20 +38,35 @@
 (define (possiblePawnMoves B color)
   (append (map (findPosOfAll B1 'BP 0 0))))
 
-(define (pawnMoves B Xpos Ypos side) ;side will invert the movement (its the color...)
-  (cond))
-
-
-(define (lookUp B Xpos Ypos [maxRange 8]) ;negative tiles will cause it to look down ;)
+(define (pawnMoves B Xpos Ypos side) ;side will invert the movement of the pawn (its the color...)
   (cond
-    ((zero? maxRange) '())
-    ((or (not (legalTile? Xpos Ypos)) (not (emptyTile? Xpos Ypos))) '())
-    (else (cons (list Xpos Ypos) (lookUp B (add1 Xpos)Ypos [maxRange 8])))))
+    ((= 1 side) (take (lookLine B Xpos Ypos) 2))  ;white pawn move
+    (else (take (lookLine B Xpos Ypos 0 -1) 2)))) ;black pawn move
+    ;need to add kills (their diffrent from regular move
+    
 
+;move options (NO KILLS... yet ;))
+(define (lookLine B Xpos Ypos [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
+  (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
+    (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)) ;to ingore the origin location
+    ((IllLegalMove? B Xpos Ypos) '())
+    (else (cons (list Xpos Ypos) (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)))))
+
+(define (lookDiagonal B Xpos Ypos [Xchange 1] [Ychange 1] [ignoreTile #T]) ;the cnages are 1 or -1
+  (cond                                                                    ;defult is bottom right diagonal
+    (ignoreTile (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F))
+    ((IllLegalMove? B Xpos Ypos) '())
+    (else (cons (list Xpos Ypos) (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)))))
+
+(define (removeOriginTile list) ;just 'deletes' the furst entry of the list (the origin tile of the move)
+  (remove (first list) list))
 
 ;movement checks
+(define (IllLegalMove? B Xpos Ypos)
+  (or (not (legalTile? B Xpos Ypos)) (not (emptyTile? B Xpos Ypos))))
+
 (define (emptyTile? B Xpos Ypos)
-  (equal? (tileAt B Xpos Ypos) '-))
+  (equal? (tileAt B Xpos Ypos) '--))
 
 (define (legalTile? B Xpos Ypos)
   (and (< Xpos 8) (< Ypos 8) (> Xpos -1) (> Ypos -1)))
@@ -87,4 +104,3 @@
 
 (define (tileAt B Xpos Ypos) ;returnes a tile in a given location
   (list-ref (list-ref B Ypos) Xpos))
-
