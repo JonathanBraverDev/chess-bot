@@ -80,7 +80,7 @@
 
 ;printing
 (define (printBoard B) ;prints the board
-  (for-each (lambda (line) (for-each (lambda (x) (display x) (display " ")) line) (newline)) B))
+  (for-each displayln B))
    
 
 ;board operations
