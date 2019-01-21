@@ -31,7 +31,7 @@
 ;           (possibleKhightMoves B color)
 ;           (possibleRookMoves B color)
 ;           (possibleQueenMoves B color)
-;           (possibleKingMoves B color)))
+;           (possibleKingMoves B color))) ;!need to add the origin location to every move list!;
 
 (define (possiblePawnMoves B color)
   (append (map (findPosOfAll B1 'BP 0 0))))
@@ -49,28 +49,65 @@
 ;first move - 2 tiles
 ;capture during first move
 ;croned at the end of the board
-    
+
+
+;Knight movement
+(define (KnightPossibleMoves B Xpos Ypos)
+  (let ([color (getColor B Xpos Ypos)])
+    (addPossibleMovesFromList Xpos Ypos (list '(2 -1) '(-2 -1)
+                                              '(2 1)  '(-2 1)
+                                              '(1 -2) '(-1 -2)
+                                              '(1 2)  '(-1 2) (getColor B Xpos Ypos)))))
+
+(define (addPossibleMovesFromList originX originY L originColor) ;list is moves relative to the origin location
+  (cond                                                                    ;WIP
+    ((empty? L) '())
+    ((not (LegalMove? B Xpos Ypos color)) (addPossibleMovesFromList originX originY L))
+    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (addPossibleMovesFromList originX originY (rest L))))))
+
+;list of junps (relative to origin pos)
+;+2 -1
+;-2 -1
+;+2 +1
+;-2 +1
+;+1 -2
+;-1 -2
+;+1 +2
+;-1 +2
+
+
+;(define (KnightJumps-sides Xpos Ypos [Xchange -2] [Ychange -1] [ignoreTile #T] [changedir #F]) ;hardcoded... (and obviusly not done)
+;  (cond
+;    (ignoreTile (KnightJumps-sides (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F))
+;    (changedir 
+;    ((not (LegalMove? B Xpos Ypos)) '())
+;    (else (cons (list Xpos Ypos) (KnightJumps-sides (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)
+
 
 ;move options (NO KILLS... yet ;))
 (define (lookLine B Xpos Ypos [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
   (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
     (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)) ;to ingore the origin location
-    ((IllLegalMove? B Xpos Ypos) '())
+    ((not (LegalMove? B Xpos Ypos)) '())
     (else (cons (list Xpos Ypos) (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)))))
 
 (define (lookDiagonal B Xpos Ypos [Xchange 1] [Ychange 1] [ignoreTile #T]) ;the cnages are 1 or -1
   (cond                                                                    ;defult is bottom right diagonal
     (ignoreTile (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F))
-    ((IllLegalMove? B Xpos Ypos) '())
+    (((not LegalMove? B Xpos Ypos)) '())
     (else (cons (list Xpos Ypos) (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)))))
 
 
 ;movement checks
-(define (IllLegalMove? B Xpos Ypos)
-  (or (not (legalTile? B Xpos Ypos)) (not (emptyTile? B Xpos Ypos))))
+(define (LegalMove? B Xpos Ypos color) ;coloer of origin piece, xy of target
+  (cond
+    ((and (legalTile? B Xpos Ypos) (not (friendlyTile? B Xpos Ypos color))) #T)
+    (else #F)))
 
-(define (emptyTile? B Xpos Ypos)
-  (equal? (getTileAt B Xpos Ypos) "--"))
+(define (friendlyTile? B Xpos Ypos color) ;coloer of origin piece, xy of target
+  (cond
+    ((equal? color (getColor B Xpos Ypos)) #T)
+    (else #F)))
 
 (define (legalTile? B Xpos Ypos)
   (and (< Xpos 8) (< Ypos 8) (> Xpos -1) (> Ypos -1)))
