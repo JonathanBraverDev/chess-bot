@@ -165,7 +165,7 @@
 
 (define (clearTileAt B Xpos Ypos)
   (cond
-    ((legalTile? B Xpos Ypos) (updateBoard B Xpos Ypos '-))
+    ((legalTile? B Xpos Ypos) (updateBoard B Xpos Ypos "--"))
     (else (print '(invalid tile)))))
 
 (define (getTileAt B Xpos Ypos) ;returnes a tile in a given location
@@ -177,3 +177,7 @@
     ((empty? L) '())
     ((equal? target (first L)) (removeAllOccurrencesOf target (rest L)))
     (else (cons (first L) (removeAllOccurrencesOf target (rest L))))))
+
+(define (moveTo B Xorigin Yorigin Xtarget Ytarget)
+  (clearTileAt (updateBoard B Xtarget Ytarget (getTileAt B Xorigin Yorigin)) Xorigin Yorigin))
+  
