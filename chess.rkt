@@ -47,6 +47,16 @@
     (else (take (lookLine B Xpos Ypos 0 -1) 2)))) ;black pawn move ;wont work, missing color parameter
     ;need to add kills (they are diffrent from regular move)
 
+;(define (pawnMoves-regularKills B Xpos Ypos side) ;WIP
+;  (cond
+;    ()))
+
+(define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
+  (cond
+    ((equal? (getTileAt B Xtarget Ytarget) "--") #F)
+    (else #T)))
+
+
 ;regular move - 1 tile
 ;kills 1 diagonal left or rigth from movement direction
 ;first move - 2 tiles
@@ -98,7 +108,7 @@
   (removeAllOccurrencesOf '() (list (RookPossibleMoves B Xpos Ypos)
                                     (BishopPossibleMoves B Xpos Ypos))))
 
-;move options (NO KILLS... yet ;))
+;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
   (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
     (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
@@ -110,6 +120,7 @@
     (ignoreTile (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F))
     ((not (LegalMove? B Xpos Ypos color)) '())
     (else (cons (list Xpos Ypos) (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
+
 
 
 ;movement checks
