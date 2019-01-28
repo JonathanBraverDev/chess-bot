@@ -12,10 +12,10 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 (define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "WQ" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "WH" "--" "--" "--" "--")
+             ("--" "--" "BH" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "BQ" "--" "--" "--")
+             ("--" "--" "WH" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
@@ -70,12 +70,11 @@
 
 
 ;Knight movement ;WORKING
-(define (KnightPossibleMoves B Xpos Ypos)
-  (cons (list Xpos Ypos) (let ([color (getColor B Xpos Ypos)])
-    (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
-                                                '(2 1)  '(-2 1)
-                                                '(1 -2) '(-1 -2)
-                                                '(1 2)  '(-1 2)) (getColor B Xpos Ypos)))))
+(define (KnightPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
+  (cons (list Xpos Ypos) (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
+                                                                            '(2 1)  '(-2 1)
+                                                                            '(1 -2) '(-1 -2)
+                                                                            '(1 2)  '(-1 2)) color)))
 
 (define (Knight-addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
   (cond                                                                    
@@ -136,14 +135,21 @@
   (cond))
 
 
-(define (attackedByKnight B Xpos Ypos attackedColor [ATKCounter 0] [L (rest(KnightPossibleMoves B Xpos Ypos))])
+(define (attackedByKnight B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (KnightPossibleMoves B Xpos Ypos targetColor))])
+  (println L)
   (cond
     ((and (empty? L) (zero? ATKCounter)) #F)
     ((empty? L) ATKCounter) ;it wont ger here if ATKCounter is at 0
-    ((and (equal? (getType B Xpos Ypos) #\H) (not (friendlyTile? B Xpos Ypos attackedColor))) (attackedByKnight B Xpos Ypos attackedColor (add1 ATKCounter) (rest L)))
-    (else (println 'else) (attackedByKnight B Xpos Ypos attackedColor ATKCounter (rest L)))))
+    ((and (isKnight? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByKnight B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
+    (else (println 'else) (attackedByKnight B Xpos Ypos targetColor ATKCounter (rest L)))))
 
-   ;move options
+(define (isKnight? B Xpos Ypos)
+  (cond
+    ((equal? (getType B Xpos Ypos) #\H) #T)
+    (else #F)))
+
+
+;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
   (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
     (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
@@ -236,4 +242,9 @@
   (cond
     ((empty? L) '())
     (else (cons (list (first L) (second L)) (pairify (drop L 2))))))
+
+(define (invertColor color)
+  (cond
+    ((equal? color #\W) #\B)
+    (else #\W)))
   
