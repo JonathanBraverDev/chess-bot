@@ -61,11 +61,6 @@
 ;  (cond
 ;    ()))
 
-(define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
-  (cond
-    ((equal? (getTileAt B Xtarget Ytarget) "--") #F)
-    (else #T)))
-
 
 ;regular move - 1 tile
 ;kills 1 diagonal left or rigth from movement direction
@@ -139,12 +134,12 @@
 
 
 ;movement checks
-(define (LegalMove? B Xpos Ypos color) ;coloer of origin piece, xy of target
+(define (LegalMove? B Xpos Ypos color) ;color of origin piece, xy of target
   (cond
     ((and (legalTile? B Xpos Ypos) (not (friendlyTile? B Xpos Ypos color))) #T)
     (else #F)))
 
-(define (friendlyTile? B Xpos Ypos color) ;coloer of origin piece, xy of target
+(define (friendlyTile? B Xpos Ypos color) ;color of origin piece, xy of target
   (cond
     ((equal? color (getColor B Xpos Ypos)) #T)
     (else #F)))
@@ -154,6 +149,11 @@
 
 (define (getColor B Xpos Ypos)
   (string-ref (getTileAt B Xpos Ypos) 0))
+
+(define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
+  (cond
+    ((or (not (equal? (getTileAt B Xtarget Ytarget) "--")) (equal? (getColor B Xpos Ypos) attackerColor)) #F)
+    (else #T)))
 
 ;printing
 (define (printBoard B) ;prints the board
