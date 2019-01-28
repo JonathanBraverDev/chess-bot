@@ -1,4 +1,5 @@
 #lang racket
+(require racket/list)
 
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
@@ -9,6 +10,15 @@
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
+
+(define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "WQ" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")))
 
 (define TST '(("WH" "--")
               ("--" "--")))
@@ -66,11 +76,11 @@
 
 ;Knight movement ;WORKING
 (define (KnightPossibleMoves B Xpos Ypos)
-  (let ([color (getColor B Xpos Ypos)])
+  (cons (list Xpos Ypos) (let ([color (getColor B Xpos Ypos)])
     (addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
-                                              '(2 1)  '(-2 1)
-                                              '(1 -2) '(-1 -2)
-                                              '(1 2)  '(-1 2)) (getColor B Xpos Ypos))))
+                                                '(2 1)  '(-2 1)
+                                                '(1 -2) '(-1 -2)
+                                                '(1 2)  '(-1 2)) (getColor B Xpos Ypos)))))
 
 (define (addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
   (cond                                                                    
@@ -87,26 +97,31 @@
 
 ;rook movement (EZ) ;WORKING
 (define (RookPossibleMoves B Xpos Ypos)
-  (removeAllOccurrencesOf '()
+  (cons (list Xpos Ypos) ;first enelemt is the origin location
+        (flatten-lists
+         (removeAllOccurrencesOf '()
           (let ([color (getColor B Xpos Ypos)])
             (list (lookLine B Xpos Ypos color) ;will run defult (down)
                   (lookLine B Xpos Ypos color 0 -1) ;up
                   (lookLine B Xpos Ypos color 1 0) ;right
-                  (lookLine B Xpos Ypos color -1 0))))) ;left
+                  (lookLine B Xpos Ypos color -1 0))))))) ;left
 
 ;bishop movement (EZ) ;WORKING
 (define (BishopPossibleMoves B Xpos Ypos)
-  (removeAllOccurrencesOf '()
+  (cons (list Xpos Ypos) ;first enelemt is the origin location
+        (flatten-lists
+         (removeAllOccurrencesOf '()
           (let ([color (getColor B Xpos Ypos)])
             (list (lookDiagonal B Xpos Ypos color) ;defult (bottom right)
                   (lookDiagonal B Xpos Ypos color 1 -1) ;upper roght
                   (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
-                  (lookDiagonal B Xpos Ypos color -1 -1))))) ;upper left
+                  (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
 
 ;queen movement (SOOOO EZ) ;WORKING
 (define (QueenPossibleMoves B Xpos Ypos)
-  (removeAllOccurrencesOf '() (list (RookPossibleMoves B Xpos Ypos)
-                                    (BishopPossibleMoves B Xpos Ypos))))
+  (cons (list Xpos Ypos)
+        (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
+                                            (rest (BishopPossibleMoves B Xpos Ypos))))))
 
 ;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
@@ -180,4 +195,12 @@
 
 (define (moveTo B Xorigin Yorigin Xtarget Ytarget)
   (clearTileAt (updateBoard B Xtarget Ytarget (getTileAt B Xorigin Yorigin)) Xorigin Yorigin))
+
+(define (flatten-lists L)
+  (pairify (flatten L))) ;not my naming idea...
+
+(define (pairify L) ;the length of the list is always devisible by 2 (each list contains 2 numbers)
+  (cond
+    ((empty? L) '())
+    (else (cons (list (first L) (second L)) (pairify (drop L 2))))))
   
