@@ -72,16 +72,16 @@
 ;Knight movement ;WORKING
 (define (KnightPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos) (let ([color (getColor B Xpos Ypos)])
-    (addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
+    (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
                                                 '(2 1)  '(-2 1)
                                                 '(1 -2) '(-1 -2)
                                                 '(1 2)  '(-1 2)) (getColor B Xpos Ypos)))))
 
-(define (addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
+(define (Knight-addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
   (cond                                                                    
     ((empty? L) '())
-    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor)) (addPossibleMovesFromList B originX originY (rest L) originColor))
-    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (addPossibleMovesFromList B originX originY (rest L) originColor)))))
+    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor)) (Knight-addPossibleMovesFromList B originX originY (rest L) originColor))
+    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (Knight-addPossibleMovesFromList B originX originY (rest L) originColor)))))
 
 ;(define (KnightJumps-sides Xpos Ypos [Xchange -2] [Ychange -1] [ignoreTile #T] [changedir #F]) ;hardcoded... (and obviusly not done)
 ;  (cond
@@ -108,7 +108,7 @@
          (removeAllOccurrencesOf '()
           (let ([color (getColor B Xpos Ypos)])
             (list (lookDiagonal B Xpos Ypos color) ;defult (bottom right)
-                  (lookDiagonal B Xpos Ypos color 1 -1) ;upper roght
+                  (lookDiagonal B Xpos Ypos color 1 -1) ;upper right
                   (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
                   (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
 
@@ -118,7 +118,32 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;move options
+;king movement
+(define (KingPossibleMoves B Xpos Ypos)
+  (cons (list Xpos Ypos)
+        (let ([color (getColor B Xpos Ypos)])
+          (King-addPossibleMovesFromList B Xpos Ypos (list '(1 -1) '(1 0) '(1 1) '(0 1)
+                                                           '(0 -1) '(-1 -1) '(-1 0) '(-1 1)) (getColor B Xpos Ypos)))))
+
+(define (King-addPossibleMovesFromList B originX originY L originColor)
+  (cond 
+    ((empty? L) '())
+    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor)) (King-addPossibleMovesFromList B originX originY (rest L) originColor)) 
+    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor) (King-addPossibleMovesFromList B originX originY (rest L) originColor)) ;filteres out attacked tiles
+    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) originColor)))))
+
+(define (attackedTile? B Xpos Ypos)
+  (cond))
+
+
+(define (attackedByKnight B Xpos Ypos attackedColor [ATKCounter 0] [L (rest(KnightPossibleMoves B Xpos Ypos))])
+  (cond
+    ((and (empty? L) (zero? ATKCounter)) #F)
+    ((empty? L) ATKCounter) ;it wont ger here if ATKCounter is at 0
+    ((and (equal? (getType B Xpos Ypos) #\H) (not (friendlyTile? B Xpos Ypos attackedColor))) (attackedByKnight B Xpos Ypos attackedColor (add1 ATKCounter) (rest L)))
+    (else (println 'else) (attackedByKnight B Xpos Ypos attackedColor ATKCounter (rest L)))))
+
+   ;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
   (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
     (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
@@ -150,6 +175,9 @@
 (define (getColor B Xpos Ypos)
   (string-ref (getTileAt B Xpos Ypos) 0))
 
+(define (getType B Xpos Ypos)
+  (string-ref (getTileAt B Xpos Ypos) 1))
+
 (define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
   (cond
     ((or (not (equal? (getTileAt B Xtarget Ytarget) "--")) (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
@@ -158,6 +186,11 @@
 ;printing
 (define (printBoard B) ;prints the board
   (for-each displayln B))
+
+
+;main
+;(define (PVP B [color #\W])
+;  (
    
 
 ;board operations
