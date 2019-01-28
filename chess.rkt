@@ -152,7 +152,7 @@
 
 (define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
   (cond
-    ((or (not (equal? (getTileAt B Xtarget Ytarget) "--")) (equal? (getColor B Xpos Ypos) attackerColor)) #F)
+    ((or (not (equal? (getTileAt B Xtarget Ytarget) "--")) (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
     (else #T)))
 
 ;printing
