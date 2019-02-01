@@ -50,7 +50,10 @@
   (append (map (findPosOfAll B1 'BP 0 0))))
 
 ;pawn section (its the only piece that gets one...)
-                       ;WIP
+
+(define (PawnPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
+  (cons (list Xpos Ypos) '())) ;will take all moves in here
+
 (define (pawnMoves-startingLane B Xpos Ypos side) ;side will invert the movement of the pawn (its the color...)
   (cond
     ((= 1 side) (take (lookLine B Xpos Ypos) 2))  ;white pawn move ;wont work, missing color parameter
@@ -195,8 +198,44 @@
 
 
 ;main
-;(define (PVP B [color #\W])
-;  (
+(define (PVP B [color #\W])
+  (cond
+    ((equal? color #\W) (displayln "white's turn"))
+    (else (displayln "black's turn")))
+  (PVP (selectTile B color) (invertColor color)))
+
+(define (selectTile B [color #\W])
+  (printBoard B)
+  (displayln "enter X of tile (up to 7)")
+  (define Xpos (read))
+  (displayln "enter Y of tile (up tp 7)")
+  (define Ypos (read))
+  (moveOptions B Xpos Ypos color))
+   
+(define (moveOptions B Xpos Ypos color)
+  (cond
+    ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
+    (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
+
+(define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)])
+  (cond
+    ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos))
+    ((equal? target #\B) (BishopPossibleMoves B Xpos Ypos))
+    ((equal? target #\H) (KnightPossibleMoves B Xpos Ypos))
+    ((equal? target #\R) (RookPossibleMoves B Xpos Ypos))
+    ((equal? target #\Q) (QueenPossibleMoves B Xpos Ypos))
+    ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
+    (else 'ERR-cant-recognize-piece)))
+
+(define (selectMove B movesL color)
+  (cond
+    ((empty? (rest movesL)) (displayln "can't move") (selectTile B color))
+    (else 
+     (displayln "pick a move (index):")
+     (displayln (rest movesL)) ;to ignore origin location
+     (newline)
+     (define moveIndex (add1 (read)))
+     (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
    
 
 ;board operations
