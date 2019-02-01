@@ -11,10 +11,10 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
+(define B2 '(("--" "WK" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "WH" "--" "--" "--" "--")
              ("--" "--" "BH" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "BQ" "--" "--" "--")
+             ("WK" "--" "--" "--" "BQ" "--" "--" "--")
              ("--" "--" "WH" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
@@ -139,17 +139,41 @@
 
 
 (define (attackedByKnight B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (KnightPossibleMoves B Xpos Ypos targetColor))])
-  (println L)
   (cond
     ((and (empty? L) (zero? ATKCounter)) #F)
     ((empty? L) ATKCounter) ;it wont ger here if ATKCounter is at 0
     ((and (isKnight? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByKnight B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
-    (else (println 'else) (attackedByKnight B Xpos Ypos targetColor ATKCounter (rest L)))))
+    (else (attackedByKnight B Xpos Ypos targetColor ATKCounter (rest L)))))
 
 (define (isKnight? B Xpos Ypos)
   (cond
     ((equal? (getType B Xpos Ypos) #\H) #T)
     (else #F)))
+
+(define (attackedByBishopOrQueen B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (BishopPossibleMoves B Xpos Ypos))])
+  (cond
+    ((and (empty? L) (zero? ATKCounter)) #F)
+    ((empty? L) ATKCounter)
+    ((and (isBishopOrQueen? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByBishopOrQueen B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
+    (else (attackedByBishopOrQueen B Xpos Ypos targetColor ATKCounter (rest L)))))
+
+(define (isBishopOrQueen? B Xpos Ypos)
+  (cond
+    ((or (equal? (getType B Xpos Ypos) #\B) (equal? (getType B Xpos Ypos) #\Q)) #T)
+    (else #F)))
+
+(define (attackedByRookOrQueen B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (RookPossibleMoves B Xpos Ypos))])
+  (cond
+    ((and (empty? L) (zero? ATKCounter)) #F)
+    ((empty? L) ATKCounter)
+    ((and (isRookOrQueen? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByRookOrQueen B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
+    (else (attackedByRookOrQueen B Xpos Ypos targetColor ATKCounter (rest L)))))
+
+(define (isRookOrQueen? B Xpos Ypos)
+  (cond
+    ((or (equal? (getType B Xpos Ypos) #\B) (equal? (getType B Xpos Ypos) #\Q)) #T)
+    (else #F)))
+;need to add pawn moves too
 
 
 ;move options
