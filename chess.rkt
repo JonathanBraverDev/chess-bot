@@ -13,7 +13,7 @@
 
 (define B2 '(("--" "WK" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "WH" "--" "--" "--" "--")
-             ("--" "--" "BH" "--" "--" "--" "--" "--")
+             ("--" "--" "BH" "--" "--" "WP" "--" "--")
              ("WK" "--" "--" "--" "BQ" "--" "--" "--")
              ("--" "--" "WH" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
@@ -52,24 +52,52 @@
 ;pawn section (its the only piece that gets one...)
 
 (define (PawnPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
-  (cons (list Xpos Ypos) '())) ;will take all moves in here
+  (cons (list Xpos Ypos)
+        (flatten-lists
+         (removeAllOccurrencesOf '()
+          (let ([side  (sideFinder color)])
+            (list (pawnMoves-regularKills B Xpos Ypos side)
+                  (pawnMoves-startingLane B Xpos Ypos side)
+                  '())))))) ;more moves soon
 
-(define (pawnMoves-startingLane B Xpos Ypos side) ;side will invert the movement of the pawn (its the color...)
+
+(define (pawnMoves-regualarMove B Xpos Ypos side)
   (cond
-    ((= 1 side) (take (lookLine B Xpos Ypos) 2))  ;white pawn move ;wont work, missing color parameter
-    (else (take (lookLine B Xpos Ypos 0 -1) 2)))) ;black pawn move ;wont work, missing color parameter
-    ;need to add kills (they are diffrent from regular move)
+    ((equal? (getTileAt B Xpos (+ Ypos side)) "--") (list Xpos (+ Ypos side))) ;WORNING! this is a single list and may fuck up other stuff
+    (else '()))) ;defult 'no new move here' output that will get filtered out
 
-;(define (pawnMoves-regularKills B Xpos Ypos side) ;WIP
-;  (cond
-;    ()))
+(define (pawnMoves-startingLane B Xpos Ypos side [color (getColor B Xpos Ypos)]) ;side will invert the movement of the pawn (its the color...)
+  (cond
+    ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos (+ Ypos side) side) (pawnMoves-regualarMove B Xpos Ypos side))) ;i check if he can move at all and then add amove IF he can go 2 tiles
+    (else (pawnMoves-regualarMove B Xpos Ypos side)))) ;its just gonna do its own thing...
+    
 
+(define (originLaneFinder color) ;ummm it just tells the Y of the starting lane
+  (cond
+    ((equal? color #\W) 1)
+    (else 6)))
 
-;regular move - 1 tile
-;kills 1 diagonal left or rigth from movement direction
-;first move - 2 tiles
-;capture during first move
-;croned at the end of the board
+(define (isOnStartingLane? Ypos color)
+  (cond
+    ((= Ypos (originLaneFinder color)) #T)
+    (else #F)))
+
+(define (sideFinder color) ;again, its simple... (returns the DEFULT change in Y)
+  (cond
+    ((equal? color #\W) 1)
+    (else -1)))
+
+(define (pawnMoves-regularKills B Xpos Ypos side [L '(1 -1)] [color (getColor B Xpos Ypos)])
+  (cond
+    ((empty? L) '())
+    ((and (legalTile? B (+ Xpos (first L)) (+ Ypos side)) (kill? B (+ Xpos (first L)) (+ Ypos side) color)) (cons (list (+ Xpos (first L)) (+ Ypos side)) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
+    (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color))))
+
+;regular move - 1 tile                                    DONE
+;kills 1 diagonal left or rigth from movement direction   DONE
+;first move - 2 tiles                                     DONE
+;capture during first move                                      some hard shit here, i need to save the last move
+;croned at the end of the board                                 just like starting lane but with a change of the peice in the move
 
 
 ;Knight movement ;WORKING
@@ -199,7 +227,7 @@
 
 (define (friendlyTile? B Xpos Ypos color) ;color of origin piece, xy of target
   (cond
-    ((equal? color (getColor B Xpos Ypos)) #T)
+    ((equal? color (getColor B Xpos Ypos)) #T) ;ummmm MAYbe pointless?...
     (else #F)))
 
 (define (legalTile? B Xpos Ypos)
@@ -213,7 +241,7 @@
 
 (define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
   (cond
-    ((or (not (equal? (getTileAt B Xtarget Ytarget) "--")) (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
+    ((or (equal? (getTileAt B Xtarget Ytarget) "--") (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
     (else #T)))
 
 ;printing
@@ -257,7 +285,7 @@
     (else 
      (displayln "pick a move (index):")
      (displayln (rest movesL)) ;to ignore origin location
-     (newline)
+     (newline) 
      (define moveIndex (add1 (read)))
      (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
    
