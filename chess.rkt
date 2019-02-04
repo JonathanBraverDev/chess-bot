@@ -24,7 +24,7 @@
               ("--" "--")))
 
 ;legend:
-;king => K
+;king => K  
 ;queen => Q
 ;rook => R
 ;khight => H
@@ -34,20 +34,28 @@
 
 ;prefix:
 ;black piece => "B"
-;white piece => "W" 
+;white piece => "W"
+
+;value of each piece:
+;Pawn - 1
+;Bishop - 3
+;Knight - 3
+;Rook - 5
+;Queen - 9
+;King - game (JK... but realy, its game over if you lose him so its infinity)
 
 ;movement
 
-;(define (possibleMoves B color)
+;(define (possibleMoves B color) ;needs to return pairs of 2 locations: one origin and one destanation
 ;  (append (possiblePawnMoves B color)
 ;           (possibleBishopMoves B color)
 ;           (possibleKhightMoves B color)
 ;           (possibleRookMoves B color)
 ;           (possibleQueenMoves B color)
-;           (possibleKingMoves B color))) ;!need to add the origin location to every move list!;
+;           (possibleKingMoves B color)))
 
-(define (possiblePawnMoves B color)
-  (append (map (findPosOfAll B1 'BP 0 0))))
+;(define (possiblePawnMoves B color)
+;  (append (map (findPosOfAll B1 'BP 0 0))))
 
 ;pawn section (its the only piece that gets one...)
 
@@ -199,7 +207,7 @@
 
 (define (isRookOrQueen? B Xpos Ypos)
   (cond
-    ((or (equal? (getType B Xpos Ypos) #\B) (equal? (getType B Xpos Ypos) #\Q)) #T)
+    ((or (equal? (getType B Xpos Ypos) #\R) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
 ;need to add pawn moves too
 
@@ -291,12 +299,19 @@
    
 
 ;board operations
-(define (findPosOfAll B target Xpos Ypos)
-  (cond
+(define (findPosOfAll B target Xpos Ypos) ;will (probably) be replaced by find aoo color, it rund once over the board, not 6 times for every piece type ;)
+  (cond                                   ;they're VERY similar anyway and i have no reay use for this one...
     ((= Ypos (length B)) '())
     ((= Xpos (length (first B))) (findPosOfAll B target 0 (add1 Ypos)))
     ((equal? (getTileAt B Xpos Ypos) target) (cons (list Xpos Ypos) (findPosOfAll B target (add1 Xpos) Ypos)))
     (else (findPosOfAll B target (add1 Xpos) Ypos))))
+
+(define (findAllColor B color [Xpos 0] [Ypos 0])
+  (cond
+    ((= Ypos (length B)) '())
+    ((= Xpos (length (first B))) (findAllColor B color 0 (add1 Ypos)))
+    ((equal? (getColor B Xpos Ypos) color) (cons (list Xpos Ypos) (findAllColor B color (add1 Xpos) Ypos)))
+    (else (findAllColor B color (add1 Xpos) Ypos))))
 
 (define (updateBoard B Xpos Ypos input)
   (cond
@@ -315,6 +330,9 @@
 
 (define (getTileAt B Xpos Ypos) ;returnes a tile in a given location
   (list-ref (list-ref B Ypos) Xpos))
+
+;minimax base
+;coming soon :)
 
 ;general use
 (define (removeAllOccurrencesOf target L)
