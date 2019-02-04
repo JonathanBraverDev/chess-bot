@@ -11,10 +11,10 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("--" "WK" "--" "--" "--" "--" "--" "--")
+(define B2 '(("--" "WH" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "WH" "--" "--" "--" "--")
              ("--" "--" "BH" "--" "--" "WP" "--" "--")
-             ("WK" "--" "--" "--" "BQ" "--" "--" "--")
+             ("WQ" "--" "--" "--" "BQ" "--" "--" "--")
              ("--" "--" "WH" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
@@ -156,7 +156,7 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;king movement
+;king movement ;WIP!  DO NOT USE
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
         (let ([color (getColor B Xpos Ypos)])
@@ -171,7 +171,7 @@
     (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) originColor)))))
 
 (define (attackedTile? B Xpos Ypos)
-  (cond))
+  (cond)) ;WIP
 
 
 (define (attackedByKnight B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (KnightPossibleMoves B Xpos Ypos targetColor))])
@@ -332,7 +332,29 @@
   (list-ref (list-ref B Ypos) Xpos))
 
 ;minimax base
-;coming soon :)
+(define (allMovesForColor B color [L (findAllColor B color)])
+  (cond
+    ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
+    (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
+
+(define (addOriginPosToDestanation L [index 1]) ;index 0 is the origin ;) (no bugs XD)
+  (cond
+    ((= index (length L)) '())
+    (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
+
+(define (allPossibleMovesForColor B color [L (allMovesForColor B color)])
+   (cond
+     ((empty? L) '())
+     (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
+
+(define (getAllMovesForColor B color) ;just removes
+  (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
+
+(define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its along list
+  (cond
+    ((empty? (rest L)) #|there is a function for this... i'll update it|# 'done) ;temporary output ONLY
+    (else (printBoard (moveTo B (first (first (first L))) (second (first (first L))) (first (second (first L))) (second (second (first L)))))
+          (makeAllMoves B color (rest L))))) ;YASSSSSSSSSSS working
 
 ;general use
 (define (removeAllOccurrencesOf target L)
