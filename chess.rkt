@@ -209,6 +209,20 @@
   (cond
     ((or (equal? (getType B Xpos Ypos) #\R) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
+
+(define (attackedByPawn B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
+  (cond
+    ((and (empty? L) (zero? ATKCounter)) #F)
+    ((empty? L) ATKCounter)
+    ((and (isPawn? B (+ Xpos (first (first L))) (+ Ypos (second (first L)))) (not (friendlyTile? B (+ Xpos (first (first L))) (+ Ypos (second (first L))) targetColor))
+          (isIn? (pawnMoves-regularKills B (+ Xpos (first (first L))) (+ Ypos (second (first L))) (sideFinder (invertColor targetColor))) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
+    (else (attackedByPawn B Xpos Ypos targetColor ATKCounter (rest L)))))
+
+(define (isPawn? B Xpos Ypos)
+  (cond
+    ((equal? (getType B Xpos Ypos) #\P) #T)
+    (else #F)))
+    
 ;need to add pawn moves too
 
 
@@ -313,6 +327,12 @@
     ((equal? (getColor B Xpos Ypos) color) (cons (list Xpos Ypos) (findAllColor B color (add1 Xpos) Ypos)))
     (else (findAllColor B color (add1 Xpos) Ypos))))
 
+(define (isIn? L target)
+  (cond
+    ((empty? L) #F)
+    ((equal? (first L) target) #T)
+    (else (isIn? (rest L) target))))
+
 (define (updateBoard B Xpos Ypos input)
   (cond
     ((= Ypos 0) (cons (updateCol (first B) Xpos input) (rest B)))
@@ -354,6 +374,7 @@
   (cond
     ((empty? (rest L)) #|there is a function for this... i'll update it|# 'done) ;temporary output ONLY
     (else (printBoard (moveTo B (first (first (first L))) (second (first (first L))) (first (second (first L))) (second (second (first L)))))
+          (newline)
           (makeAllMoves B color (rest L))))) ;YASSSSSSSSSSS working
 
 ;general use
