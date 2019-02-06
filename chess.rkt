@@ -11,16 +11,16 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("--" "WH" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "WH" "--" "--" "--" "--")
-             ("--" "--" "BH" "--" "--" "WP" "--" "--")
-             ("WQ" "--" "--" "--" "BQ" "--" "--" "--")
-             ("--" "--" "WH" "--" "--" "--" "--" "--")
+(define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "BP" "--" "WK" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("WH" "--")
+(define TST '(("--" "--")
               ("--" "--")))
 
 ;legend:
@@ -31,6 +31,9 @@
 ;bishop => B
 ;pawn => P
 ;enpty space\tile => --
+
+;WD - white target dummy
+;BD - black target dummy
 
 ;prefix:
 ;black piece => "B"
@@ -46,19 +49,7 @@
 
 ;movement
 
-;(define (possibleMoves B color) ;needs to return pairs of 2 locations: one origin and one destanation
-;  (append (possiblePawnMoves B color)
-;           (possibleBishopMoves B color)
-;           (possibleKhightMoves B color)
-;           (possibleRookMoves B color)
-;           (possibleQueenMoves B color)
-;           (possibleKingMoves B color)))
-
-;(define (possiblePawnMoves B color)
-;  (append (map (findPosOfAll B1 'BP 0 0))))
-
 ;pawn section (its the only piece that gets one...)
-
 (define (PawnPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
   (cons (list Xpos Ypos)
         (flatten-lists
@@ -121,12 +112,6 @@
     ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor)) (Knight-addPossibleMovesFromList B originX originY (rest L) originColor))
     (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (Knight-addPossibleMovesFromList B originX originY (rest L) originColor)))))
 
-;(define (KnightJumps-sides Xpos Ypos [Xchange -2] [Ychange -1] [ignoreTile #T] [changedir #F]) ;hardcoded... (and obviusly not done)
-;  (cond
-;    (ignoreTile (KnightJumps-sides (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F))
-;    (changedir 
-;    ((not (LegalMove? B Xpos Ypos)) '())
-;    (else (cons (list Xpos Ypos) (KnightJumps-sides (+ Xpos Xchange) (+ Ypos Ychange) Xchange Ychange #F)
 
 ;rook movement (EZ) ;WORKING
 (define (RookPossibleMoves B Xpos Ypos)
@@ -139,6 +124,7 @@
                   (lookLine B Xpos Ypos color 1 0) ;right
                   (lookLine B Xpos Ypos color -1 0))))))) ;left
 
+
 ;bishop movement (EZ) ;WORKING
 (define (BishopPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos) ;first enelemt is the origin location
@@ -150,6 +136,7 @@
                   (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
                   (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
 
+
 ;queen movement (SOOOO EZ) ;WORKING
 (define (QueenPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
@@ -159,21 +146,29 @@
 ;king movement ;WIP!  DO NOT USE
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
-        (let ([color (getColor B Xpos Ypos)])
-          (King-addPossibleMovesFromList B Xpos Ypos (list '(1 -1) '(1 0) '(1 1) '(0 1)
-                                                           '(0 -1) '(-1 -1) '(-1 0) '(-1 1)) (getColor B Xpos Ypos)))))
+        (King-addPossibleMovesFromList B Xpos Ypos)))
 
-(define (King-addPossibleMovesFromList B originX originY L originColor)
+(define (King-addPossibleMovesFromList B originX originY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))] [attackedColor (getColor B originX originY)])
   (cond 
     ((empty? L) '())
-    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor)) (King-addPossibleMovesFromList B originX originY (rest L) originColor)) 
-    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) originColor) (King-addPossibleMovesFromList B originX originY (rest L) originColor)) ;filteres out attacked tiles
-    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) originColor)))))
+    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor)) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)) 
+    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)) ;filteres out attacked tiles
+    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)))))
 
-(define (attackedTile? B Xpos Ypos)
-  (cond)) ;WIP
+(define (attackedTile? B Xpos Ypos attackedColor) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
+  (define dummy (makeDummy attackedColor))            ;I'll worry about refactoring later, its modular anyway
+  (not
+   (or
+    (attackedByKnight B Xpos Ypos)
+    (attackedByBishopOrQueen B Xpos Ypos)
+    (attackedByRookOrQueen B Xpos Ypos)
+    (attackedByPawn B Xpos Ypos dummy) ;DOES NOT WORK PROPERLY! use with this in mind (its realy shit actualy... and I've given up on fixing it, for now)
+    (attackedByKing B Xpos Ypos))))
 
-
+(define (makeDummy dummyColor) ;its so simple that it's here just for the ease of use
+  (string dummyColor #\D))
+  
+    
 (define (attackedByKnight B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (rest (KnightPossibleMoves B Xpos Ypos targetColor))])
   (cond
     ((and (empty? L) (zero? ATKCounter)) #F)
@@ -181,8 +176,9 @@
     ((and (isKnight? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByKnight B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
     (else (attackedByKnight B Xpos Ypos targetColor ATKCounter (rest L)))))
 
-(define (isKnight? B Xpos Ypos)
+(define (isKnight? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
   (cond
+    (outOfBounds #F)
     ((equal? (getType B Xpos Ypos) #\H) #T)
     (else #F)))
 
@@ -193,8 +189,9 @@
     ((and (isBishopOrQueen? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByBishopOrQueen B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
     (else (attackedByBishopOrQueen B Xpos Ypos targetColor ATKCounter (rest L)))))
 
-(define (isBishopOrQueen? B Xpos Ypos)
+(define (isBishopOrQueen? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
   (cond
+    (outOfBounds #F)
     ((or (equal? (getType B Xpos Ypos) #\B) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
 
@@ -205,25 +202,38 @@
     ((and (isRookOrQueen? B (first (first L)) (second (first L))) (not (friendlyTile? B (first (first L)) (second (first L)) targetColor))) (attackedByRookOrQueen B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
     (else (attackedByRookOrQueen B Xpos Ypos targetColor ATKCounter (rest L)))))
 
-(define (isRookOrQueen? B Xpos Ypos)
+(define (isRookOrQueen? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
   (cond
+    (outOfBounds #F)
     ((or (equal? (getType B Xpos Ypos) #\R) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
 
-(define (attackedByPawn B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
-  (cond
+(define (attackedByPawn B Xpos Ypos dummy [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
+  (cond ;need to update the board to have a 'dummy target' at the origin location
     ((and (empty? L) (zero? ATKCounter)) #F)
     ((empty? L) ATKCounter)
     ((and (isPawn? B (+ Xpos (first (first L))) (+ Ypos (second (first L)))) (not (friendlyTile? B (+ Xpos (first (first L))) (+ Ypos (second (first L))) targetColor))
-          (isIn? (pawnMoves-regularKills B (+ Xpos (first (first L))) (+ Ypos (second (first L))) (sideFinder (invertColor targetColor))) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
-    (else (attackedByPawn B Xpos Ypos targetColor ATKCounter (rest L)))))
+          (isIn? (pawnMoves-regularKills B (+ Xpos (first (first L))) (+ Ypos (second (first L))) (sideFinder targetColor)) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos dummy targetColor (add1 ATKCounter) (rest L)))
+    (else (attackedByPawn B Xpos Ypos dummy targetColor ATKCounter (rest L)))))
 
-(define (isPawn? B Xpos Ypos)
+(define (isPawn? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
   (cond
+    (outOfBounds #F)
     ((equal? (getType B Xpos Ypos) #\P) #T)
     (else #F)))
-    
-;need to add pawn moves too
+
+(define (attackedByKing B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))])
+  (cond
+    ((and (empty? L) (zero? ATKCounter)) #F)
+    ((empty? L) ATKCounter)
+    ((and (isKing? B (+ Xpos (first (first L))) (+ Ypos (second (first L)))) (not (friendlyTile? B (+ Xpos (first (first L))) (+ Ypos (second (first L))) targetColor))) 1) ;there can be only one king
+    (else (attackedByKing B Xpos Ypos targetColor ATKCounter (rest L)))))
+
+(define (isKing? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
+  (cond
+    (outOfBounds #F)
+    ((equal? (getType B Xpos Ypos) #\K) #T)
+    (else #F)))
 
 
 ;move options
