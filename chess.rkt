@@ -12,10 +12,10 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 (define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "BP" "--" "WK" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "WQ" "--" "--" "WH")
+             ("--" "--" "--" "--" "--" "--" "--" "WP")
+             ("--" "--" "--" "--" "WR" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "WB")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
@@ -143,7 +143,7 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;king movement ;WIP!  DO NOT USE
+;king movement ;STILL WIP
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
         (King-addPossibleMovesFromList B Xpos Ypos)))
@@ -155,15 +155,30 @@
     ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)) ;filteres out attacked tiles
     (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)))))
 
-(define (attackedTile? B Xpos Ypos attackedColor) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
-  (define dummy (makeDummy attackedColor))            ;I'll worry about refactoring later, its modular anyway
-  (not
-   (or
-    (attackedByKnight B Xpos Ypos)
-    (attackedByBishopOrQueen B Xpos Ypos)
-    (attackedByRookOrQueen B Xpos Ypos)
-    (attackedByPawn B Xpos Ypos dummy) ;DOES NOT WORK PROPERLY! use with this in mind (its realy shit actualy... and I've given up on fixing it, for now)
-    (attackedByKing B Xpos Ypos))))
+(define (filterOutKingDeaths B L attackedColor)
+  (cond
+    ((empty? L) '())
+    ((attackedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
+    (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
+
+(define (attackedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
+  (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
+                                            ;DOEN NOT WORK YET, its sooooo bad, nothing detects properly and cant see protected pieces
+  (print Xpos) (println Ypos) 
+  (let ([newB (clearTileAt B Xpos Ypos)]) ;clearing the tile so the piece wont block the search
+    (println (attackedByKnight B Xpos Ypos))
+    (println (attackedByBishopOrQueen newB Xpos Ypos))
+    (println (attackedByRookOrQueen newB Xpos Ypos))
+    (println (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos))
+    (println (attackedByKing newB Xpos Ypos attackedColor))
+    (newline)
+  
+    (or
+     (attackedByKnight B Xpos Ypos) ;knights jump anyway...
+     (attackedByBishopOrQueen newB Xpos Ypos) ;broken
+     (attackedByRookOrQueen newB Xpos Ypos) ;broken
+     (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos) ;ok, MAYBE operetional (no in-depth checks)
+     (attackedByKing newB Xpos Ypos attackedColor))))
 
 (define (makeDummy dummyColor) ;its so simple that it's here just for the ease of use
   (string dummyColor #\D))
@@ -208,13 +223,15 @@
     ((or (equal? (getType B Xpos Ypos) #\R) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
 
-(define (attackedByPawn B Xpos Ypos dummy [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
-  (cond ;need to update the board to have a 'dummy target' at the origin location
-    ((and (empty? L) (zero? ATKCounter)) #F)
-    ((empty? L) ATKCounter)
-    ((and (isPawn? B (+ Xpos (first (first L))) (+ Ypos (second (first L)))) (not (friendlyTile? B (+ Xpos (first (first L))) (+ Ypos (second (first L))) targetColor))
-          (isIn? (pawnMoves-regularKills B (+ Xpos (first (first L))) (+ Ypos (second (first L))) (sideFinder targetColor)) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos dummy targetColor (add1 ATKCounter) (rest L)))
-    (else (attackedByPawn B Xpos Ypos dummy targetColor ATKCounter (rest L)))))
+(define (attackedByPawn B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
+  (let ([newX (+ Xpos (first (first L)))]
+        [newY (+ Ypos (second (first L)))])
+    (cond ;need to update the board to have a 'dummy target' at the origin location
+      ((and (empty? (rest L)) (zero? ATKCounter)) #F)
+      ((empty? (rest L)) ATKCounter)
+      ((and (isPawn? B newX newY) (not (friendlyTile? B newX newY targetColor))
+            (isIn? (pawnMoves-regularKills B newX newY (sideFinder (invertColor targetColor))) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
+      (else (attackedByPawn B Xpos Ypos targetColor ATKCounter (rest L))))))
 
 (define (isPawn? B Xpos Ypos [outOfBounds (not (legalTile? B Xpos Ypos))])
   (cond
