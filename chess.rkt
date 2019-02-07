@@ -101,6 +101,7 @@
 
 ;Knight movement ;WORKING
 (define (KnightPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
+  (printBoard B)
   (cons (list Xpos Ypos) (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
                                                                             '(2 1)  '(-2 1)
                                                                             '(1 -2) '(-1 -2)
@@ -146,7 +147,8 @@
 ;king movement ;STILL WIP
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
-        (King-addPossibleMovesFromList B Xpos Ypos)))
+        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos)))
+                                        ;to get the king out of the way of potential attackers
 
 (define (King-addPossibleMovesFromList B originX originY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))] [attackedColor (getColor B originX originY)])
   (cond 
@@ -163,10 +165,10 @@
 
 (define (attackedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
   (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
-                                            ;DOEN NOT WORK YET, its sooooo bad, nothing detects properly and cant see protected pieces
-  (print Xpos) (println Ypos) 
-  (let ([newB (clearTileAt B Xpos Ypos)]) ;clearing the tile so the piece wont block the search
-    (println (attackedByKnight B Xpos Ypos))
+
+  (print Xpos) (println Ypos);for debug only (I wipe unnecesery debugs on the next update)
+  (let ([newB (updateBoard B Xpos Ypos dummy)]) ;placing a target so nearby pieces will see it as a legal move
+    (println (attackedByKnight newB Xpos Ypos))
     (println (attackedByBishopOrQueen newB Xpos Ypos))
     (println (attackedByRookOrQueen newB Xpos Ypos))
     (println (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos))
@@ -174,10 +176,10 @@
     (newline)
   
     (or
-     (attackedByKnight B Xpos Ypos) ;knights jump anyway...
-     (attackedByBishopOrQueen newB Xpos Ypos) ;broken
-     (attackedByRookOrQueen newB Xpos Ypos) ;broken
-     (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos) ;ok, MAYBE operetional (no in-depth checks)
+     (attackedByKnight newB Xpos Ypos)
+     (attackedByBishopOrQueen newB Xpos Ypos)
+     (attackedByRookOrQueen newB Xpos Ypos)
+     (attackedByPawn newB Xpos Ypos)
      (attackedByKing newB Xpos Ypos attackedColor))))
 
 (define (makeDummy dummyColor) ;its so simple that it's here just for the ease of use
