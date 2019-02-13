@@ -101,7 +101,7 @@
 
 ;Knight movement ;WORKING
 (define (KnightPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
-  (printBoard B)
+;  (printBoard B)
   (cons (list Xpos Ypos) (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
                                                                             '(2 1)  '(-2 1)
                                                                             '(1 -2) '(-1 -2)
@@ -166,14 +166,14 @@
 (define (attackedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
   (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
 
-  (print Xpos) (println Ypos);for debug only (I wipe unnecesery debugs on the next update)
+;  (print Xpos) (println Ypos) ;for debug only (I wipe unnecesery debugs on the next update)
   (let ([newB (updateBoard B Xpos Ypos dummy)]) ;placing a target so nearby pieces will see it as a legal move
-    (println (attackedByKnight newB Xpos Ypos))
-    (println (attackedByBishopOrQueen newB Xpos Ypos))
-    (println (attackedByRookOrQueen newB Xpos Ypos))
-    (println (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos))
-    (println (attackedByKing newB Xpos Ypos attackedColor))
-    (newline)
+;    (println (attackedByKnight newB Xpos Ypos))
+;    (println (attackedByBishopOrQueen newB Xpos Ypos))
+;    (println (attackedByRookOrQueen newB Xpos Ypos))
+;    (println (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos))
+;    (println (attackedByKing newB Xpos Ypos attackedColor))
+;    (newline)
   
     (or
      (attackedByKnight newB Xpos Ypos)
@@ -339,6 +339,15 @@
      (newline) 
      (define moveIndex (add1 (read)))
      (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
+
+(define (PVEdemo B [color #\W] [human #T]) ;its a completly random bot
+  (cond
+    ((equal? color #\W) (displayln "white's turn"))
+    (else (displayln "black's turn")))
+  (cond
+    (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
+    (else (let ([move (randomIndexFrom (allPossibleMovesForColor B color))])
+            (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
    
 
 ;board operations
@@ -406,6 +415,9 @@
           (newline)
           (makeAllMoves B color (rest L))))) ;YASSSSSSSSSSS working
 
+(define (makeMove B L)
+  (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
+
 ;general use
 (define (removeAllOccurrencesOf target L)
   (cond
@@ -428,4 +440,12 @@
   (cond
     ((equal? color #\W) #\B)
     (else #\W)))
+
+(define (invertPlayer human)
+  (cond
+    ((equal? human #T) #F)
+    (else #T)))
+
+(define (randomIndexFrom L)
+  (list-ref L (random (length L))))
   
