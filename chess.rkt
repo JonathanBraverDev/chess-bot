@@ -56,9 +56,10 @@
          (removeAllOccurrencesOf '()
           (let ([side  (sideFinder color)])
             (list (pawnMoves-regularKills B Xpos Ypos side)
-                  (pawnMoves-startingLane B Xpos Ypos side)
+                  (pawnMoves-startingLane B Xpos Ypos side)  
                   '())))))) ;more moves soon
-
+;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
+;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
 (define (pawnMoves-regualarMove B Xpos Ypos side)
   (cond
@@ -101,11 +102,12 @@
 
 ;Knight movement ;WORKING
 (define (KnightPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
-;  (printBoard B)
   (cons (list Xpos Ypos) (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
                                                                             '(2 1)  '(-2 1)
                                                                             '(1 -2) '(-1 -2)
                                                                             '(1 2)  '(-1 2)) color)))
+;need to add a 'if king is attacked now' then 'you HAVE to move him OR kill the attacker on THIS turn' filter
+;it'll leave only the moves that (looking at the board after the move and finding no attack) protects the king, or his own moves
 
 (define (Knight-addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
   (cond                                                                    
