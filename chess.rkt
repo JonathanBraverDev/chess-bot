@@ -348,6 +348,15 @@
     (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
     (else (let ([move (randomIndexFrom (allPossibleMovesForColor B color))])
             (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
+
+(define (EVEbullshit B [color #\W]) ;its a completly random bot
+  (printBoard B)
+  (newline)
+  (cond
+    ((equal? color #\W) (displayln "white's turn"))
+    (else (displayln "black's turn")))
+  (let ([move (randomIndexFrom (allPossibleMovesForColor B color))])
+    (EVEbullshit (makeMove B move) (invertColor color))))
    
 
 ;board operations
