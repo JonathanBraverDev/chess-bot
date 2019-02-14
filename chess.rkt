@@ -14,8 +14,8 @@
 (define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "WQ" "--" "--" "WH")
              ("--" "--" "--" "--" "--" "--" "--" "WP")
-             ("--" "--" "--" "--" "WR" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "WB")
+             ("--" "--" "--" "--" "WR" "--" "BK" "--")
+             ("--" "--" "--" "BP" "--" "--" "--" "WB")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
@@ -146,11 +146,11 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;king movement ;STILL WIP
+;king movement ;WORKING (but no check... check)
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
-        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos)))
-                                        ;to get the king out of the way of potential attackers
+        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos))) ;to get the king out of the way of potential attackers
+                                        
 
 (define (King-addPossibleMovesFromList B originX originY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))] [attackedColor (getColor B originX originY)])
   (cond 
@@ -168,15 +168,7 @@
 (define (attackedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
   (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
 
-;  (print Xpos) (println Ypos) ;for debug only (I wipe unnecesery debugs on the next update)
   (let ([newB (updateBoard B Xpos Ypos dummy)]) ;placing a target so nearby pieces will see it as a legal move
-;    (println (attackedByKnight newB Xpos Ypos))
-;    (println (attackedByBishopOrQueen newB Xpos Ypos))
-;    (println (attackedByRookOrQueen newB Xpos Ypos))
-;    (println (attackedByPawn (updateBoard newB Xpos Ypos dummy) Xpos Ypos))
-;    (println (attackedByKing newB Xpos Ypos attackedColor))
-;    (newline)
-  
     (or
      (attackedByKnight newB Xpos Ypos)
      (attackedByBishopOrQueen newB Xpos Ypos)
@@ -332,7 +324,7 @@
     ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
     (else 'ERR-cant-recognize-piece)))
 
-(define (selectMove B movesL color)
+(define (selectMove B movesL color) ;its can force a move that leaves the king attacked, the search per piece needs to change
   (cond
     ((empty? (rest movesL)) (displayln "can't move") (selectTile B color))
     (else 
@@ -362,12 +354,26 @@
    
 
 ;board operations
-(define (findPosOfAll B target Xpos Ypos) ;will (probably) be replaced by find aoo color, it rund once over the board, not 6 times for every piece type ;)
-  (cond                                   ;they're VERY similar anyway and i have no reay use for this one...
+(define (findPosOfAll B target [Xpos 0] [Ypos 0]) ;will (probably) be replaced by find aoo color, it rund once over the board, not 6 times for every piece type ;)
+  (cond                                           ;they're VERY similar anyway and i have no reay use for this one...
     ((= Ypos (length B)) '())
     ((= Xpos (length (first B))) (findPosOfAll B target 0 (add1 Ypos)))
     ((equal? (getTileAt B Xpos Ypos) target) (cons (list Xpos Ypos) (findPosOfAll B target (add1 Xpos) Ypos)))
     (else (findPosOfAll B target (add1 Xpos) Ypos))))
+
+
+(define (findKing B color)
+  (searchForKing B (makeKing color)))
+
+(define (searchForKing B [target (makeKing #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
+  (cond
+    ((= Ypos (length B)) '()) ;can cause problems... but maybe not... i'm filtereint these out on every function (and the random game was fine...)
+    ((= Xpos (length (first B))) (searchForKing B target 0 (add1 Ypos)))
+    ((equal? (getTileAt B Xpos Ypos) target) (list Xpos Ypos))
+    (else (searchForKing B target (add1 Xpos) Ypos))))
+
+(define (makeKing color) ;just like make dummy (i can easily combine these (lattterrrr))
+  (string color #\K))
 
 (define (findAllColor B color [Xpos 0] [Ypos 0])
   (cond
@@ -401,8 +407,8 @@
   (list-ref (list-ref B Ypos) Xpos))
 
 ;minimax base
-(define (allMovesForColor B color [L (findAllColor B color)])
-  (cond
+(define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
+  (cond                                                      ;or just the prigin in noe move is avalible
     ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
     (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
 
@@ -411,10 +417,23 @@
     ((= index (length L)) '())
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
 
-(define (allPossibleMovesForColor B color [L (allMovesForColor B color)])
-   (cond
+(define (allPossibleMovesForColor B color [L (allMovesForColor B color)]) ;RETURNS a list of all possible moves in a '(originPOS destanationPOS) structure 
+   (cond                                                                  ;ignores pieces that cannot move                          
      ((empty? L) '())
      (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
+
+(define (filterChecked B color [L (allPossibleMovesForColor B color)])
+  (let ([kingPos (findKing B color)])
+     (cond
+       ((attackedTile? B (first kingPos) (second kingPos)) (ignoreBadMoves B kingPos L)) ;crashes on king kills 
+       (else L))))
+
+(define (ignoreBadMoves B kingPos L) ;'bad moves' are when the king is cheched and left that way (no idea for a better name...)
+  (cond
+    ((empty? L) '())
+    ((equal? (first (first L)) kingPos) (cons (first L) (ignoreBadMoves B kingPos (rest L))))
+    ((attackedTile? (makeMove B (first L)) (first kingPos) (second kingPos)) (ignoreBadMoves B kingPos (rest L)))
+    (else (cons (first L) (ignoreBadMoves B kingPos (rest L)))))) ;PLACE HOLDERRRRRRRRRRRR
 
 (define (getAllMovesForColor B color) ;just removes
   (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
@@ -426,7 +445,8 @@
           (newline)
           (makeAllMoves B color (rest L))))) ;YASSSSSSSSSSS working
 
-(define (makeMove B L)
+(define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
+                       ;RETURNS a board updated after the give move
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
 ;general use
