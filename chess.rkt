@@ -23,6 +23,15 @@
 (define TST '(("WP" "--")
               ("--" "WP")))
 
+(define failedBoard (list '(WR WH -- -- WK -- -- WR) ;the black king didnt kill the white queen
+                          '(-- WP -- -- -- WP WB --)
+                          '(-- -- -- -- -- -- -- WH)
+                          '(WP -- -- -- WP WB WP --)
+                          '(BP BH BP BP -- -- -- BP)
+                          '(-- -- -- -- -- BH -- --)
+                          '(-- BP -- -- BP BP BP BR)
+                          '(BR -- BB WQ BK BB -- --))))
+                         
 ;legend:
 ;king => K  
 ;queen => Q
@@ -340,17 +349,18 @@
     (else (displayln "black's turn")))
   (cond
     (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
-    (else (let ([move (randomIndexFrom (allPossibleMovesForColor B color))])
+    (else (let ([move (randomIndexFrom (filterChecked B color))])
             (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
 
-(define (EVEbullshit B [color #\W]) ;its a completly random bot
-  (printBoard B)
-  (newline)
+(define (EVEbullshit B [color #\W] [turnCounter 1]) ;its a completly random bot
+  (display "turn ") (println turnCounter)
   (cond
     ((equal? color #\W) (displayln "white's turn"))
     (else (displayln "black's turn")))
-  (let ([move (randomIndexFrom (allPossibleMovesForColor B color))])
-    (EVEbullshit (makeMove B move) (invertColor color))))
+  (printBoard B)
+  (newline)
+  (let ([move (randomIndexFrom (filterChecked B color))])
+    (EVEbullshit (makeMove B move) (invertColor color) (add1 turnCounter))))
    
 
 ;board operations
@@ -381,6 +391,13 @@
     ((= Xpos (length (first B))) (findAllColor B color 0 (add1 Ypos)))
     ((equal? (getColor B Xpos Ypos) color) (cons (list Xpos Ypos) (findAllColor B color (add1 Xpos) Ypos)))
     (else (findAllColor B color (add1 Xpos) Ypos))))
+
+(define (findAllType B type [Xpos 0] [Ypos 0]) ;its soooooooo similar (easy fix, but not now)
+  (cond
+    ((= Ypos (length B)) '())
+    ((= Xpos (length (first B))) (findAllType B type 0 (add1 Ypos)))
+    ((equal? (getType B Xpos Ypos) type) (cons (list Xpos Ypos) (findAllType B type (add1 Xpos) Ypos)))
+    (else (findAllType B type (add1 Xpos) Ypos))))
 
 (define (isIn? L target)
   (cond
@@ -454,6 +471,16 @@
   (cond
     ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
     (else #F)))
+
+(define (draw? B color) ;i may have missed someting, and every option is anew line ro make it easier
+  (cond
+    ((and (not (attackedKing? B color)) (empty? (filterChecked B color))) #T) ;no moves, king NOT under attack
+    ((and (= (length (findAllColor B #\W) 0)) (= (length (findAllColor B #\B) 0))) #T) ;only kings left (i need to disallow killing the king for that to work properly)
+    ((and (= (+ (length (findAllColor B #\B) (length (findAllColor B #\W)))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is asimilar thing with multiple bishpps on the same color)
+                                                                                    (findAllType B #\H))) #T) ;king + knight VS king
+    (else #F))) ;i think it everyting... ignoring (just foe now) the multiplu same colored bishops
+               ;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
+               ;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
 
 ;general use
 (define (attackedKing? B color)
