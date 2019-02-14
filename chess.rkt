@@ -12,16 +12,16 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 (define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "WQ" "--" "--" "WH")
+             ("--" "--" "--" "--" "WQ" "--" "WP" "WH")
              ("--" "--" "--" "--" "--" "--" "--" "WP")
              ("--" "--" "--" "--" "WR" "--" "BK" "--")
-             ("--" "--" "--" "BP" "--" "--" "--" "WB")
+             ("--" "--" "--" "BP" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("--" "--")
-              ("--" "--")))
+(define TST '(("WP" "--")
+              ("--" "WP")))
 
 ;legend:
 ;king => K  
@@ -219,11 +219,11 @@
     ((or (equal? (getType B Xpos Ypos) #\R) (equal? (getType B Xpos Ypos) #\Q)) #T)
     (else #F)))
 
-(define (attackedByPawn B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1))])
-  (let ([newX (+ Xpos (first (first L)))]
+(define (attackedByPawn B Xpos Ypos [targetColor (getColor B Xpos Ypos)] [ATKCounter 0] [L (list '(1 1) '(-1 1) '(1 -1) '(-1 -1) '(10 10 "dont delete me"))])
+  (let ([newX (+ Xpos (first (first L)))]                                                                                        ;to avoid skipping hte last attack check
         [newY (+ Ypos (second (first L)))])
     (cond ;need to update the board to have a 'dummy target' at the origin location
-      ((and (empty? (rest L)) (zero? ATKCounter)) #F)
+      ((and (empty? (rest L)) (zero? ATKCounter)) #F) ;i need valus to define the let so i have to be sure i have someting in the list
       ((empty? (rest L)) ATKCounter)
       ((and (isPawn? B newX newY) (not (friendlyTile? B newX newY targetColor))
             (isIn? (pawnMoves-regularKills B newX newY (sideFinder (invertColor targetColor))) (list Xpos Ypos))) (attackedByPawn B Xpos Ypos targetColor (add1 ATKCounter) (rest L)))
@@ -425,7 +425,7 @@
 (define (filterChecked B color [L (allPossibleMovesForColor B color)])
   (let ([kingPos (findKing B color)])
      (cond
-       ((attackedTile? B (first kingPos) (second kingPos)) (ignoreBadMoves B kingPos L)) ;crashes on king kills 
+       ((attackedKing? B color) (ignoreBadMoves B kingPos L)) ;crashes on king kills 
        (else L))))
 
 (define (ignoreBadMoves B kingPos L) ;'bad moves' are when the king is cheched and left that way (no idea for a better name...)
@@ -449,7 +449,19 @@
                        ;RETURNS a board updated after the give move
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
+;special conditions (wins, draws and other stuff)
+(define (win? B color) ;from the prespective of the loser
+  (cond
+    ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
+    (else #F)))
+
 ;general use
+(define (attackedKing? B color)
+  (let ([kingPos (findKing B color)])
+    (cond
+      ((attackedTile? B (first kingPos) (second kingPos)) #T)
+      (else #F))))
+     
 (define (removeAllOccurrencesOf target L)
   (cond
     ((empty? L) '())
