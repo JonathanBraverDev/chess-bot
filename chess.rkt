@@ -20,18 +20,21 @@
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("WP" "--")
-              ("--" "WP")))
+(define TST '(("--" "WP")
+              ("WQ" "BK")))
 
-(define failedBoard (list '(WR WH -- -- WK -- -- WR) ;the black king didnt kill the white queen
-                          '(-- WP -- -- -- WP WB --)
-                          '(-- -- -- -- -- -- -- WH)
-                          '(WP -- -- -- WP WB WP --)
-                          '(BP BH BP BP -- -- -- BP)
-                          '(-- -- -- -- -- BH -- --)
-                          '(-- BP -- -- BP BP BP BR)
-                          '(BR -- BB WQ BK BB -- --))))
-                         
+(define F (list '("WR" "WH" "--" "--" "WK" "--" "--" "WR") ;the black king didnt kill the white queen
+                '("--" "WP" "--" "--" "--" "WP" "WB" "--")
+                '("--" "--" "--" "--" "--" "--" "--" "WH")
+                '("WP" "--" "--" "--" "WP" "WB" "WP" "--")
+                '("BP" "BH" "BP" "BP" "--" "--" "--" "BP")
+                '("--" "--" "--" "--" "--" "BH" "--" "--")
+                '("--" "BP" "--" "--" "BP" "BP" "BP" "BR")
+                '("BR" "--" "BB" "WQ" "BK" "BB" "--" "--")))
+
+(define b #\B) ;just for ease of input
+(define w #\W) ;yeah, im THAT lazy
+
 ;legend:
 ;king => K  
 ;queen => Q
@@ -158,15 +161,15 @@
 ;king movement ;WORKING (but no check... check)
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
-        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos))) ;to get the king out of the way of potential attackers
+        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos (getColor B Xpos Ypos)))) ;to get the king out of the way of potential attackers
                                         
 
-(define (King-addPossibleMovesFromList B originX originY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))] [attackedColor (getColor B originX originY)])
+(define (King-addPossibleMovesFromList B originX originY attackedColor [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))]) ;defuld is just a placeholder, expects aboard with an empty tile hwere the king stood
   (cond 
     ((empty? L) '())
-    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor)) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)) 
-    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)) ;filteres out attacked tiles
-    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY (rest L) attackedColor)))))
+    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) 
+    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) ;filteres out attacked tiles
+    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))))))
 
 (define (filterOutKingDeaths B L attackedColor)
   (cond
@@ -178,6 +181,19 @@
   (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
 
   (let ([newB (updateBoard B Xpos Ypos dummy)]) ;placing a target so nearby pieces will see it as a legal move
+    
+    #| debug 
+    (printBoard B)
+    (newline)
+    (println dummy)
+    (printBoard newB)
+    (display "Knight: ")        (println (attackedByKnight newB Xpos Ypos))
+    (display "BishopOrQueen: ") (println (attackedByBishopOrQueen newB Xpos Ypos))
+    (display "RookOrQueen: ")   (println (attackedByRookOrQueen newB Xpos Ypos))
+    (display "Pawn: ")          (println (attackedByPawn newB Xpos Ypos))
+    (display "King: ")          (println (attackedByKing newB Xpos Ypos attackedColor))
+    (newline) |#
+    
     (or
      (attackedByKnight newB Xpos Ypos)
      (attackedByBishopOrQueen newB Xpos Ypos)
@@ -518,4 +534,9 @@
 
 (define (randomIndexFrom L)
   (list-ref L (random (length L))))
+
+;debug
+(define (cheakKing B color)
+  (let ([kingPos (findKing B color)])
+    (KingPossibleMoves B (first kingPos) (second kingPos))))
   
