@@ -65,13 +65,13 @@
           (let ([side  (sideFinder color)])
             (list (pawnMoves-regularKills B Xpos Ypos side)
                   (pawnMoves-startingLane B Xpos Ypos side)  
-                  '()))))))
+                  '())))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
 (define (pawnMoves-regualarMove B Xpos Ypos side)
   (cond
-    ((equal? (getTileAt B Xpos (+ Ypos side)) "--") (list Xpos (+ Ypos side))) ;WARNING! returns a 'single layered' list
+    ((equal? (getTileAt B Xpos (+ Ypos side)) "--") (list Xpos (+ Ypos side))) ;WARNING! returns a 'single layered' list (so be carefull... it MAY fuckup someting... somehow)
     (else '()))) ;defult 'no new move here' output that will get filtered out
 
 (define (pawnMoves-startingLane B Xpos Ypos side [color (getColor B Xpos Ypos)]) 
@@ -155,7 +155,7 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;king movement ;WORKING
+;king movement ;WORKING (now with a new and improved (actually... yeah, it is) check... check XD)
 (define (KingPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
         (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos (getColor B Xpos Ypos)))) ;to get the king out of the way of potential attackers
