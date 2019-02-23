@@ -20,17 +20,13 @@
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("--" "WP")
-              ("WQ" "BK")))
+(define TST '(("--" "--" "--" "WP" "WQ") ;(4 0) to (1 3) shouldn't be possible
+              ("BB" "--" "--" "--" "--")
+              ("BP" "--" "BP" "--" "WB")
+              ("--" "BK" "--" "--" "--")))
 
-(define F (list '("WR" "WH" "--" "--" "WK" "--" "--" "WR") ;the black king didnt kill the white queen
-                '("--" "WP" "--" "--" "--" "WP" "WB" "--")
-                '("--" "--" "--" "--" "--" "--" "--" "WH")
-                '("WP" "--" "--" "--" "WP" "WB" "WP" "--")
-                '("BP" "BH" "BP" "BP" "--" "--" "--" "BP")
-                '("--" "--" "--" "--" "--" "BH" "--" "--")
-                '("--" "BP" "--" "--" "BP" "BP" "BP" "BR")
-                '("BR" "--" "BB" "WQ" "BK" "BB" "--" "--")))
+(define F "only checkmates and uncrowned pawn cause crashes hooray!!!")
+
 
 (define b #\B) ;just for ease of input
 (define w #\W) ;yeah, im THAT lazy
@@ -140,7 +136,7 @@
                   (lookLine B Xpos Ypos color -1 0))))))) ;left
 
 
-;bishop movement (EZ) ;WORKING
+;bishop movement (EZ) ;bug (lookDiagonal TST 4 0 w -1 1) returns '((3 1) (2 2) (1 3)) but needs to be '((3 1) (2 2))
 (define (BishopPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos) ;first enelemt is the origin location
         (flatten-lists
@@ -192,7 +188,8 @@
     (display "RookOrQueen: ")   (println (attackedByRookOrQueen newB Xpos Ypos))
     (display "Pawn: ")          (println (attackedByPawn newB Xpos Ypos))
     (display "King: ")          (println (attackedByKing newB Xpos Ypos attackedColor))
-    (newline) |#
+    (newline)
+    |#
     
     (or
      (attackedByKnight newB Xpos Ypos)
@@ -278,12 +275,14 @@
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
   (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
     (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
+    ((kill? B Xpos Ypos color) (cons (list Xpos Ypos) '()))
     ((not (LegalMove? B Xpos Ypos color)) '())
     (else (cons (list Xpos Ypos) (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
 
 (define (lookDiagonal B Xpos Ypos color [Xchange 1] [Ychange 1] [ignoreTile #T]) ;the cnages are 1 or -1
   (cond                                                                    ;defult is bottom right diagonal
     (ignoreTile (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F))
+    ((kill? B Xpos Ypos color) (cons (list Xpos Ypos) '())) ;to prevent further checks if the piece finds a kill (it cant over or kill multiple pieses in one turn)
     ((not (LegalMove? B Xpos Ypos color)) '())
     (else (cons (list Xpos Ypos) (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
 
@@ -311,7 +310,7 @@
 
 (define (kill? B Xtarget Ytarget attackerColor) ;legal tiles assumed, its an inner function
   (cond
-    ((or (equal? (getTileAt B Xtarget Ytarget) "--") (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
+    ((or (not (legalTile? B Xtarget Ytarget)) (equal? (getTileAt B Xtarget Ytarget) "--") (equal? (getColor B Xtarget Ytarget) attackerColor)) #F)
     (else #T)))
 
 ;printing
