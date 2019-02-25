@@ -1,7 +1,12 @@
 #lang racket
 (require racket/list)
 
-(define-struct state (B attackedKing color lastMove parent))
+(define-struct state (B score color parent))
+
+#| notes
+i'll need to turn all my lists of moves to boards, pawn's gonna suck
+|#
+
 
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
@@ -13,11 +18,11 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "WQ" "--" "WP" "WH")
-             ("--" "--" "--" "--" "--" "--" "--" "WP")
-             ("--" "--" "--" "--" "WR" "--" "BK" "--")
-             ("--" "--" "--" "BP" "--" "--" "--" "--")
+(define B2 '(("--" "--" "--" "--" "--" "WQ" "--" "--")
+             ("--" "--" "--" "--" "BP" "--" "--" "WQ")
+             ("--" "--" "--" "--" "--" "--" "BP" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
@@ -61,13 +66,17 @@
 
 ;pawn section (its the only piece that gets one...)
 (define (PawnPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
-  (cons (list Xpos Ypos)
-        (flatten-lists
-         (removeAllOccurrencesOf '()
-           (let ([side  (sideFinder color)])
-             (list (pawnMoves-regularKills B Xpos Ypos side)
-                   (pawnMoves-startingLane B Xpos Ypos side color)  
-                   '())))))) ;more moves soon (ummmm NOPE XD)
+  (let ([side  (sideFinder color)])
+    (cond
+      ((isOnStartingLane? Ypos (invertColor color)) (Pawn-Crowning B Xpos Ypos color side (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
+      (else
+       (makeAllMoves B color (allPossibleMovesForColor B color
+          (cons (list Xpos Ypos)
+                (flatten-lists
+                 (removeAllOccurrencesOf '()
+                   (list (pawnMoves-regularKills B Xpos Ypos side)
+                         (pawnMoves-startingLane B Xpos Ypos side color)  
+                         '())))))))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
@@ -92,6 +101,24 @@
     ((= Ypos (originLaneFinder color)) #T)
     (else #F)))
 
+(define (Pawn-Crowning B Xpos Ypos color side L) ;I'll add the pawn boards on their own cuse the crowning isnt a 'regular' move
+  (let ([originX Xpos]
+        [originY Ypos]
+        [ratgetX (first (first L))]
+        [targetY (second (first L))])
+        (cond
+          ((empty? (rest L)) (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
+                                   (moveAndTurnInto B originX originY ratgetX targetY #\R color)
+                                   (moveAndTurnInto B originX originY ratgetX targetY #\B color)
+                                   (moveAndTurnInto B originX originY ratgetX targetY #\H color)))
+          
+          (else (append (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
+                              (moveAndTurnInto B originX originY ratgetX targetY #\R color)
+                              (moveAndTurnInto B originX originY ratgetX targetY #\B color)
+                              (moveAndTurnInto B originX originY ratgetX targetY #\H color)) (Pawn-Crowning B Xpos Ypos color side (rest L)))))))
+
+(define (moveAndTurnInto B originX originY ratgetX targetY type color)
+  (clearTileAt (updateBoard B ratgetX targetY (makePiece type color)) originX originY))
 
 #|
 (define (finalLaneFinder color)
@@ -118,10 +145,12 @@
     (else -1)))
 
 (define (pawnMoves-regularKills B Xpos Ypos side [L '(1 -1)] [color (getColor B Xpos Ypos)])
+  (let ([newX (+ Xpos (first L))]
+        [newY (+ Ypos side)])
   (cond
-    ((empty? L) '())
-    ((and (legalTile? B (+ Xpos (first L)) (+ Ypos side)) (kill? B (+ Xpos (first L)) (+ Ypos side) color)) (cons (list (+ Xpos (first L)) (+ Ypos side)) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
-    (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color))))
+    ((empty? (rest L)) '())
+    ((and (legalTile? B newX newY) (kill? B newX newY color)) (append (list newX newY) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
+    (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))))
 
 ;regular move - 1 tile                                    DONE
 ;kills 1 diagonal left or rigth from movement direction   DONE
@@ -197,7 +226,7 @@
     (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
 
 (define (attackedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;there IS A LOT of optimization to be done here... all the functions look mostly the same
-  (define dummy (makeDummy attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
+  (define dummy (makePiece #\D attackedColor))                                 ;I'll worry about refactoring later, its modular anyway
 
   (let ([newB (updateBoard B Xpos Ypos dummy)]) ;placing a target so nearby pieces will see it as a legal move
     
@@ -220,6 +249,7 @@
      (attackedByRookOrQueen newB Xpos Ypos)
      (attackedByPawn newB Xpos Ypos)
      (attackedByKing newB Xpos Ypos attackedColor))))
+
 
 (define (makeDummy dummyColor) ;its so simple that it's here just for the ease of use
   (string dummyColor #\D))
@@ -417,17 +447,19 @@
 
 
 (define (findKing B color)
-  (searchForKing B (makeKing color)))
+  (searchForKing B (makePiece #\K color)))
 
-(define (searchForKing B [target (makeKing #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
+(define (searchForKing B [target (makePiece #\K #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
   (cond
     ((= Ypos (length B)) '()) ;can cause problems... but maybe not... i'm filtereint these out on every function (and the random game was fine...)
     ((= Xpos (length (first B))) (searchForKing B target 0 (add1 Ypos)))
     ((equal? (getTileAt B Xpos Ypos) target) (list Xpos Ypos))
     (else (searchForKing B target (add1 Xpos) Ypos))))
 
+#|
 (define (makeKing color) ;just like make dummy (i can easily combine these (lattterrrr))
   (string color #\K))
+|#
 
 (define (findAllColor B color [Xpos 0] [Ypos 0])
   (cond
@@ -467,6 +499,8 @@
 (define (getTileAt B Xpos Ypos) ;returnes a tile in a given location
   (list-ref (list-ref B Ypos) Xpos))
 
+
+
 ;minimax base
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
   (cond                                                      ;or just the origin in one move is avalible
@@ -478,10 +512,12 @@
     ((= index (length L)) '())
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
 
+;|useless - i need to add the 'else' statement to the 'possibleMovesForTile'... it sholud work
 (define (allPossibleMovesForColor B color [L (allMovesForColor B color)]) ;RETURNS a list of all possible moves in a '(originPOS destanationPOS) structure 
    (cond                                                                  ;ignores pieces that cannot move                          
      ((empty? L) '())
      (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
+;|#
 
 (define (filterChecked B color [L (allPossibleMovesForColor B color)])
   (let ([kingPos (findKing B color)])
@@ -500,11 +536,14 @@
   (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
 
 (define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its a long list
+  (print L)
+  (let ([originX (first (first (first L)))]
+        [originY (second (first (first L)))]
+        [targetX (first (second (first L)))]
+        [targetY (second (second (first L)))])
   (cond
-    ((empty? (rest L)) #|there is a function for this... i'll update it|# 'done) ;temporary output ONLY
-    (else (printBoard (moveTo B (first (first (first L))) (second (first (first L))) (first (second (first L))) (second (second (first L)))))
-          (newline)
-          (makeAllMoves B color (rest L))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
+    ((empty? (rest L)) '())
+    (else (cons (moveTo B originX originY targetX targetY) (makeAllMoves B color (rest L))))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
 
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
                        ;RETURNS a board updated after the given move
@@ -562,6 +601,9 @@
 
 (define (randomIndexFrom L)
   (list-ref L (random (length L))))
+
+(define (makePiece type color)
+  (string color type))
 
 ;debug
 (define (cheakKing B color)
