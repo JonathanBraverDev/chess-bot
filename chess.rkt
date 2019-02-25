@@ -1,6 +1,8 @@
 #lang racket
 (require racket/list)
 
+(define-struct state (B attackedKing color lastMove parent))
+
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
              ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
@@ -20,10 +22,10 @@
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("--" "--" "--" "WP" "WQ") ;(4 0) to (1 3) shouldn't be possible
-              ("BB" "--" "--" "--" "--")
-              ("BP" "--" "BP" "--" "WB")
-              ("--" "BK" "--" "--" "--")))
+(define TST '(("--" "--" "--" "WK" "--") ;fixed already
+              ("--" "--" "--" "BQ" "--")
+              ("--" "--" "--" "BK" "--")
+              ("--" "--" "--" "--" "--")))
 
 (define F "only checkmates and uncrowned pawn cause crashes hooray!!!")
 
@@ -62,10 +64,10 @@
   (cons (list Xpos Ypos)
         (flatten-lists
          (removeAllOccurrencesOf '()
-          (let ([side  (sideFinder color)])
-            (list (pawnMoves-regularKills B Xpos Ypos side)
-                  (pawnMoves-startingLane B Xpos Ypos side)  
-                  '())))))) ;more moves soon (ummmm NOPE XD)
+           (let ([side  (sideFinder color)])
+             (list (pawnMoves-regularKills B Xpos Ypos side)
+                   (pawnMoves-startingLane B Xpos Ypos side color)  
+                   '())))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
@@ -89,6 +91,26 @@
   (cond
     ((= Ypos (originLaneFinder color)) #T)
     (else #F)))
+
+
+#|
+(define (finalLaneFinder color)
+  (cond
+    ((equal? color #\W) 7)
+    (else 0)))
+
+(define (isOnLastLane? Ypos color)
+  (cond
+    ((= Ypos (finalLaneFinder color)) #T)
+    (else #F)))
+
+
+(define (pawn-Crowning B Xpos Ypos)
+  (list (list (Xpos Ypos) #\H)
+        (list (Xpos Ypos) #\B)
+        (list (Xpos Ypos) #\R)
+        (list (Xpos Ypos) #\Q)))
+|#        
 
 (define (sideFinder color) ;again, its simple... (returns the DEFULT change in Y)
   (cond
@@ -369,14 +391,20 @@
             (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
 
 (define (EVEbullshit B [color #\W] [turnCounter 1]) ;its a completly random bot duel to the crash!
-  (display "turn ") (println turnCounter)
   (cond
-    ((equal? color #\W) (displayln "white's turn"))
-    (else (displayln "black's turn")))
-  (printBoard B)
-  (newline)
-  (let ([move (randomIndexFrom (filterChecked B color))])
-    (EVEbullshit (makeMove B move) (invertColor color) (add1 turnCounter))))
+    ((win? B color) (print (invertColor color)) (display " ") (display "won"))
+    (else
+     (cond
+       ((draw? B color) (print 'TIE))
+       (else                          ;its sooo bad
+        (display "turn ") (println turnCounter)
+        (cond
+          ((equal? color #\W) (displayln "white's turn"))
+          (else (displayln "black's turn")))
+        (printBoard B)
+        (newline)
+        (let ([move (randomIndexFrom (filterChecked B color))])
+          (EVEbullshit (makeMove B move) (invertColor color) (add1 turnCounter))))))))
    
 
 ;board operations
@@ -491,8 +519,8 @@
 (define (draw? B color) ;I may have missed someting, and every option is a new line ro make it easier to read and understand (so its not a page-long or)
   (cond
     ((and (not (attackedKing? B color)) (empty? (filterChecked B color))) #T) ;no moves, king NOT under attack
-    ((and (= (length (findAllColor B #\W) 0)) (= (length (findAllColor B #\B) 0))) #T) ;only kings left (i need to disallow killing the king for that to work properly (done))
-    ((and (= (+ (length (findAllColor B #\B) (length (findAllColor B #\W)))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is a similar thing with multiple bishpps on the same color)
+    ((and (= (length (findAllColor B #\W)) 1) (= (length (findAllColor B #\B)) 1)) #T) ;only kings left (i need to disallow killing the king for that to work properly (done))
+    ((and (= (+ (length (findAllColor B #\B)) (length (findAllColor B #\W))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is a similar thing with multiple bishpps on the same color)
                                                                                     (findAllType B #\H))) #T) ;king + knight VS king
     (else #F))) ;i think it's everyting... ignoring (just for now) the multiplu same colored bishops
                ;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
