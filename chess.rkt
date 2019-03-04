@@ -27,10 +27,9 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
-(define TST '(("--" "--" "--" "WK" "--") ;fixed already
-              ("--" "--" "--" "BQ" "--")
-              ("--" "--" "--" "BK" "--")
-              ("--" "--" "--" "--" "--")))
+(define TST '(("--" "--" "WK") 
+              ("--" "BP" "--")
+              ("--" "--" "--")))
 
 (define F "only checkmates and uncrowned pawn cause crashes hooray!!!")
 
@@ -70,12 +69,13 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
     (cond
       ((isOnStartingLane? Ypos (invertColor color)) (Pawn-Crowning B Xpos Ypos color side (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
       (else
+       (boardsOfAllMoves B
           (cons (list Xpos Ypos)
                 (flatten-lists
                  (removeAllOccurrencesOf '()
                    (list (pawnMoves-regularKills B Xpos Ypos side)
                          (pawnMoves-startingLane B Xpos Ypos side color)  
-                         '())))))))) ;more moves soon (ummmm NOPE XD)
+                         '()))))))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
@@ -604,7 +604,8 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 (define (invertColor color)
   (cond
     ((equal? color #\W) #\B)
-    (else #\W)))
+    ((equal? color #\B) #\W)
+    (else 'ERR-color)))
 
 (define (invertPlayer human)
   (cond
@@ -649,13 +650,33 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 
 (define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)])
   (cond
-    ((equal? target #\P) (boardsOfAllMoves B (PawnPossibleMoves B Xpos Ypos)))
+    ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos)) ;pawns can crown, the regular move system can't create new pieces so they have a different board creating system
     ((equal? target #\B) (boardsOfAllMoves B (BishopPossibleMoves B Xpos Ypos)))
     ((equal? target #\H) (boardsOfAllMoves B (KnightPossibleMoves B Xpos Ypos)))
     ((equal? target #\R) (boardsOfAllMoves B (RookPossibleMoves B Xpos Ypos)))
     ((equal? target #\Q) (boardsOfAllMoves B (QueenPossibleMoves B Xpos Ypos)))
     ((equal? target #\K) (boardsOfAllMoves B (KingPossibleMoves B Xpos Ypos)))
     (else 'ERR-cant-recognize-piece)))
+
+(define (threatenedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;needs a color input (black or white) if not given X and Y of a piece
+  (let ([dummy (makePiece #\D attackedColor)]
+        [ATKcolor (invertColor attackedColor)])
+    (checkDummyOnAllBoards (allNewBoards (updateBoard B Xpos Ypos dummy) (findAllColor B ATKcolor))))) ;it returns 4 on a crowning kills (4 different outcomes so all count)
+
+(define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
+  (cond
+    ((empty? L) (outputAnalayzer ATKcounter))
+    ((deadDummy? (first L)) (checkDummyOnAllBoards (rest L) (add1 ATKcounter)))
+    (else (checkDummyOnAllBoards (rest L) ATKcounter))))
+
+(define (outputAnalayzer ATKcounter)
+  (cond
+    ((= 0 ATKcounter) #F)
+    (else ATKcounter)))
+
+(define (deadDummy? B)
+  (empty? (findAllType B #\D)))
+  
           
 
 
