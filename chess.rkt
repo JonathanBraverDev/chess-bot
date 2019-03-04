@@ -18,12 +18,12 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("--" "--" "--" "--" "--" "WQ" "--" "--")
-             ("--" "--" "--" "--" "BP" "--" "--" "WQ")
-             ("--" "--" "--" "--" "--" "--" "BP" "--")
+(define B2 '(("WR" "--" "--" "--" "--" "WK" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "WQ")
+             ("--" "--" "WH" "BP" "--" "--" "WP" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "WB" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")))
 
@@ -70,13 +70,12 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
     (cond
       ((isOnStartingLane? Ypos (invertColor color)) (Pawn-Crowning B Xpos Ypos color side (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
       (else
-       (makeAllMoves B color (allPossibleMovesForColor B color
           (cons (list Xpos Ypos)
                 (flatten-lists
                  (removeAllOccurrencesOf '()
                    (list (pawnMoves-regularKills B Xpos Ypos side)
                          (pawnMoves-startingLane B Xpos Ypos side color)  
-                         '())))))))))) ;more moves soon (ummmm NOPE XD)
+                         '())))))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
@@ -156,7 +155,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 ;kills 1 diagonal left or rigth from movement direction   DONE
 ;first move - 2 tiles                                     DONE
 ;capture during first move                                      some hard shit here, i need to save the last move
-;croned at the end of the board                                 just like starting lane but with a change of the peice in the move
+;croned at the end of the board                           DONE
 
 
 ;Knight movement ;WORKING
@@ -391,6 +390,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
     ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
     (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
 
+#|
 (define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)])
   (cond
     ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos))
@@ -400,6 +400,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
     ((equal? target #\Q) (QueenPossibleMoves B Xpos Ypos))
     ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
     (else 'ERR-cant-recognize-piece)))
+|#
 
 (define (selectMove B movesL color) ;its can force a move that leaves the king attacked, the search per piece needs to change
   (cond
@@ -503,6 +504,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 
 ;minimax base
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
+  (println L)
   (cond                                                      ;or just the origin in one move is avalible
     ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
     (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
@@ -537,13 +539,23 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 
 (define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its a long list
   (print L)
-  (let ([originX (first (first (first L)))]
-        [originY (second (first (first L)))]
-        [targetX (first (second (first L)))]
-        [targetY (second (second (first L)))])
   (cond
-    ((empty? (rest L)) '())
-    (else (cons (moveTo B originX originY targetX targetY) (makeAllMoves B color (rest L))))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
+    ((= 3 (length L)) (makeLastMove B color L))
+    (else 
+     (let ([originX (first (first (first L)))]
+           [originY (second (first (first L)))]
+           [targetX (first (second (first L)))]
+           [targetY (second (second (first L)))])
+       (cond
+         ((empty? (rest L)) '())
+         (else (cons (moveTo B originX originY targetX targetY) (makeAllMoves B color (rest L))))))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
+
+(define (makeLastMove B color L)
+  (let ([originX (first (first L))]
+        [originY (second (first L))]
+        [targetX (first (second L))]
+        [targetY (second (second L))])
+    (cons (moveTo B originX originY targetX targetY) '())))
 
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
                        ;RETURNS a board updated after the given move
@@ -609,4 +621,54 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 (define (cheakKing B color)
   (let ([kingPos (findKing B color)])
     (KingPossibleMoves B (first kingPos) (second kingPos))))
+
+
+
+;reworked
+(define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
+  (let ([targetX (first (second L))]                                                    ;RETURNS the final BOARD of every move
+        [targetY (second (second L))]
+        [move (list (first L) (second L))])
+    (cond
+      ((empty? (drop L 2)) (list (makeMove B move)))
+      (else (cons (makeMove B move) (boardsOfAllMoves B (cons (first L) (drop L 2)) originX originY))))))
+
+(define (printAllBoards L) ;prints all listed boards
+  (cond
+    ((empty? (rest L)) (printBoard (first L)))
+    (else (printBoard (first L)) (newline) (printAllBoards (rest L)))))
+
+
+(define (allNewBoards B pieces) ;pieces is the locations, given by find all
+  (let ([pieceX (first (first pieces))]
+        [pieceY (second (first pieces))])
+    (cond
+      ((empty? (rest pieces)) (possibleMovesForTile B pieceX pieceY))
+      (else (append (possibleMovesForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
+
+
+(define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)])
+  (cond
+    ((equal? target #\P) (boardsOfAllMoves B (PawnPossibleMoves B Xpos Ypos)))
+    ((equal? target #\B) (boardsOfAllMoves B (BishopPossibleMoves B Xpos Ypos)))
+    ((equal? target #\H) (boardsOfAllMoves B (KnightPossibleMoves B Xpos Ypos)))
+    ((equal? target #\R) (boardsOfAllMoves B (RookPossibleMoves B Xpos Ypos)))
+    ((equal? target #\Q) (boardsOfAllMoves B (QueenPossibleMoves B Xpos Ypos)))
+    ((equal? target #\K) (boardsOfAllMoves B (KingPossibleMoves B Xpos Ypos)))
+    (else 'ERR-cant-recognize-piece)))
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
   
