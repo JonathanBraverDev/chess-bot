@@ -3,6 +3,11 @@
 
 (define-struct state (B score color parent))
 
+#| notes
+i'll need to turn all my lists of moves to boards, pawn's gonna suck
+|#
+
+
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
              ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
@@ -65,12 +70,12 @@
       ((isOnStartingLane? Ypos (invertColor color)) (Pawn-Crowning B Xpos Ypos color side (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
       (else
        (boardsOfAllMoves B
-          (cons (list Xpos Ypos)
-                (flatten-lists
-                 (removeAllOccurrencesOf '()
-                   (list (pawnMoves-regularKills B Xpos Ypos side)
-                         (pawnMoves-startingLane B Xpos Ypos side color)  
-                         '()))))))))) ;more moves soon (ummmm NOPE XD)
+                         (cons (list Xpos Ypos)
+                               (flatten-lists
+                                (removeAllOccurrencesOf '()
+                                                        (list (pawnMoves-regularKills B Xpos Ypos side)
+                                                              (pawnMoves-startingLane B Xpos Ypos side color)  
+                                                              '()))))))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
@@ -100,16 +105,16 @@
         [originY Ypos]
         [ratgetX (first (first L))]
         [targetY (second (first L))])
-        (cond
-          ((empty? (rest L)) (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
-                                   (moveAndTurnInto B originX originY ratgetX targetY #\R color)
-                                   (moveAndTurnInto B originX originY ratgetX targetY #\B color)
-                                   (moveAndTurnInto B originX originY ratgetX targetY #\H color)))
+    (cond
+      ((empty? (rest L)) (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
+                               (moveAndTurnInto B originX originY ratgetX targetY #\R color)
+                               (moveAndTurnInto B originX originY ratgetX targetY #\B color)
+                               (moveAndTurnInto B originX originY ratgetX targetY #\H color)))
           
-          (else (append (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
-                              (moveAndTurnInto B originX originY ratgetX targetY #\R color)
-                              (moveAndTurnInto B originX originY ratgetX targetY #\B color)
-                              (moveAndTurnInto B originX originY ratgetX targetY #\H color)) (Pawn-Crowning B Xpos Ypos color side (rest L)))))))
+      (else (append (list (moveAndTurnInto B originX originY ratgetX targetY #\Q color)
+                          (moveAndTurnInto B originX originY ratgetX targetY #\R color)
+                          (moveAndTurnInto B originX originY ratgetX targetY #\B color)
+                          (moveAndTurnInto B originX originY ratgetX targetY #\H color)) (Pawn-Crowning B Xpos Ypos color side (rest L)))))))
 
 (define (moveAndTurnInto B originX originY ratgetX targetY type color)
   (clearTileAt (updateBoard B ratgetX targetY (makePiece type color)) originX originY))
@@ -123,10 +128,10 @@
 (define (pawnMoves-regularKills B Xpos Ypos side [L '(1 -1)] [color (getColor B Xpos Ypos)])
   (let ([newX (+ Xpos (first L))]
         [newY (+ Ypos side)])
-  (cond
-    ((empty? (rest L)) '())
-    ((and (legalTile? B newX newY) (kill? B newX newY color)) (append (list newX newY) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
-    (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))))
+    (cond
+      ((empty? (rest L)) '())
+      ((and (legalTile? B newX newY) (kill? B newX newY color)) (append (list newX newY) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
+      (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))))
 
 ;regular move - 1 tile                                    DONE
 ;kills 1 diagonal left or rigth from movement direction   DONE
@@ -155,11 +160,11 @@
   (cons (list Xpos Ypos) ;first enelemt is the origin location
         (flatten-lists
          (removeAllOccurrencesOf '()
-          (let ([color (getColor B Xpos Ypos)])
-            (list (lookLine B Xpos Ypos color) ;will run defult (down)
-                  (lookLine B Xpos Ypos color 0 -1) ;up
-                  (lookLine B Xpos Ypos color 1 0) ;right
-                  (lookLine B Xpos Ypos color -1 0))))))) ;left
+                                 (let ([color (getColor B Xpos Ypos)])
+                                   (list (lookLine B Xpos Ypos color) ;will run defult (down)
+                                         (lookLine B Xpos Ypos color 0 -1) ;up
+                                         (lookLine B Xpos Ypos color 1 0) ;right
+                                         (lookLine B Xpos Ypos color -1 0))))))) ;left
 
 ;casteling       gonna be a b**** (and idk if i'll bother)
 
@@ -169,11 +174,11 @@
   (cons (list Xpos Ypos) ;first enelemt is the origin location
         (flatten-lists
          (removeAllOccurrencesOf '()
-          (let ([color (getColor B Xpos Ypos)])
-            (list (lookDiagonal B Xpos Ypos color) ;defult (bottom right)
-                  (lookDiagonal B Xpos Ypos color 1 -1) ;upper right
-                  (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
-                  (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
+                                 (let ([color (getColor B Xpos Ypos)])
+                                   (list (lookDiagonal B Xpos Ypos color) ;defult (bottom right)
+                                         (lookDiagonal B Xpos Ypos color 1 -1) ;upper right
+                                         (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
+                                         (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
 
 
 ;queen movement (SOOOO EZ) ;WORKING
@@ -192,13 +197,13 @@
   (cond 
     ((empty? L) '())
     ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) 
-    ((attackedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) ;filteres out attacked tiles
+    ((threatenedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) ;filteres out attacked tiles
     (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))))))
 
 (define (filterOutKingDeaths B L attackedColor)
   (cond
     ((empty? L) '())
-    ((attackedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
+    ((threatenedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
     (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
 
 
@@ -256,14 +261,15 @@
     (else (displayln "black's turn")))
   (PVP (selectTile B color) (invertColor color)))
 
-(define (selectTile B [color #\W])
+(define (selectTile B [color #\W]) ;will be graphical later, but still use the same core so it's ok
   (printBoard B)
   (displayln "enter X of tile (up to 7)")
   (define Xpos (read))
   (displayln "enter Y of tile (up tp 7)")
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
-   
+
+#|
 (define (moveOptions B Xpos Ypos color)
   (cond
     ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
@@ -278,6 +284,7 @@
      (newline) 
      (define moveIndex (add1 (read)))
      (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
+|#
 
 (define (PVEdemo B [color #\W] [human #T]) ;its a completly random bot
   (cond
@@ -383,22 +390,22 @@
 
 ;|useless - i need to add the 'else' statement to the 'possibleMovesForTile'... it sholud work
 (define (allPossibleMovesForColor B color [L (allMovesForColor B color)]) ;RETURNS a list of all possible moves in a '(originPOS destanationPOS) structure 
-   (cond                                                                  ;ignores pieces that cannot move                          
-     ((empty? L) '())
-     (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
+  (cond                                                                  ;ignores pieces that cannot move                          
+    ((empty? L) '())
+    (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
 ;|#
 
 (define (filterChecked B color [L (allPossibleMovesForColor B color)])
   (let ([kingPos (findKing B color)])
-     (cond
-       ((attackedKing? B color) (ignoreBadMoves B kingPos L)) ;crashes on king kills (and it was realy usefull (the crash I mean) to find falty functions... so tnx for craching ;))
-       (else L))))
+    (cond
+      ((attackedKing? B color) (ignoreBadMoves B kingPos L)) ;crashes on king kills (and it was realy usefull (the crash I mean) to find falty functions... so tnx for craching ;))
+      (else L))))
 
 (define (ignoreBadMoves B kingPos L) ;'bad moves' are when the king is cheched and left that way (no idea for a better name... (psssst, what about 'can't run or be defended'?)
   (cond
     ((empty? L) '())
     ((equal? (first (first L)) kingPos) (cons (first L) (ignoreBadMoves B kingPos (rest L))))
-    ((attackedTile? (makeMove B (first L)) (first kingPos) (second kingPos)) (ignoreBadMoves B kingPos (rest L)))
+    ((threatenedTile? (makeMove B (first L)) (first kingPos) (second kingPos)) (ignoreBadMoves B kingPos (rest L)))
     (else (cons (first L) (ignoreBadMoves B kingPos (rest L)))))) ;PLACE HOLDERRRRRRRRRRRR (not anymore)
 
 (define (getAllMovesForColor B color) ;just removes (removes what??? (JK) it removes all 'empty moves' (as in piesec that have mo moves) from the move list)
@@ -425,7 +432,7 @@
     (cons (moveTo B originX originY targetX targetY) '())))
 
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
-                       ;RETURNS a board updated after the given move
+  ;RETURNS a board updated after the given move
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
 ;special conditions (wins, draws and other stuff) (unused yet)
@@ -441,14 +448,14 @@
     ((and (= (+ (length (findAllColor B #\B)) (length (findAllColor B #\W))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is a similar thing with multiple bishpps on the same color)
                                                                                     (findAllType B #\H))) #T) ;king + knight VS king
     (else #F))) ;i think it's everyting... ignoring (just for now) the multiplu same colored bishops
-               ;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
-               ;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
+;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
+;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
 
 ;general use
 (define (attackedKing? B color)
   (let ([kingPos (findKing B color)])
     (cond
-      ((attackedTile? B (first kingPos) (second kingPos)) #T)
+      ((threatenedTile? B (first kingPos) (second kingPos)) #T)
       (else #F))))
      
 (define (removeAllOccurrencesOf target L)
@@ -484,6 +491,7 @@
 
 (define (makePiece type color)
   (string color type))
+
 
 ;debug
 (define (cheakKing B color)
@@ -543,7 +551,32 @@
 
 (define (deadDummy? B)
   (empty? (findAllType B #\D)))
-  
+
+
+(define (moveOptions B Xpos Ypos color) ;color is the current player (this function gets called by 'selectTile' in the 'main' section)
+  (cond
+    ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
+    (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
+
+
+(define (selectMove B movesL color) ;movesL is a LIST of MOVES (hummmm i'll need a spesial function for the pawn... later)
+  (cond                             ;WILL NOT WORK on pawns about to crown, yet
+    ((empty? (rest movesL)) (displayln "can't move, ") (reasonGiver B color) (selectTile B color))
+    (else
+     (let ([originX (first (first movesL))]
+           [originY (second (first movesL))])
+       (displayln "pick a move (index):")
+       (displayln (rest movesL)) ;to ignore origin location
+       (newline) 
+       (let ([moveIndex (add1 (read))]) ;to skip origin location (minimum index is 1)
+         (moveTo B originX originY (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))))
+
+(define (reasonGiver B color) ;just some more info, will later be replaced with text displayed in the game window
+  (cond
+    ((attackedKing? B color) (display "the king is under attack"))
+    (else (display "all moves are blocked"))))
+
+
           
 
 
