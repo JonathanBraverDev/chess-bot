@@ -3,6 +3,10 @@
 
 (define-struct state (B score color parent))
 
+#| notes
+i'll need to turn all my lists of moves to boards, pawn's gonna suck
+|#
+
 
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
@@ -402,7 +406,7 @@
 (define (clearTileAt B Xpos Ypos)
   (cond
     ((legalTile? B Xpos Ypos) (updateBoard B Xpos Ypos "--"))
-    (else (print '(invalid tile)))))
+    (else (print 'invalid-tile))))
 
 (define (getTileAt B Xpos Ypos) ;returnes a tile in a given location
   (list-ref (list-ref B Ypos) Xpos))
@@ -413,8 +417,8 @@
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
   (println L)
   (cond                                                      ;or just the origin in one move is avalible
-    ((empty? (rest L)) (list (possibleBoardsForTile B (first (first L)) (second (first L)))))
-    (else (cons (possibleBoardsForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
+    ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
+    (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
 
 (define (addOriginPosToDestanation L [index 1]) ;index 0 is the origin ;) (no bugs XD)
   (cond
@@ -445,7 +449,6 @@
   (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
 
 (define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its a long list
-  (print L)
   (cond
     ((= 3 (length L)) (makeLastMove B color L))
     (else 
@@ -555,7 +558,9 @@
       ((empty? (rest pieces)) (possibleBoardsForTile B pieceX pieceY))
       (else (append (possibleBoardsForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
 
-
+;CURRENT CRASH LOCATION!!!!
+           ;given B1 w => ((0 7)) 
+           ;given B1 b => ((0 0))
 (define (possibleBoardsForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;only the bot uses this functuion
   (cond
     ((equal? target #\P) (PawnPossibleBoards B Xpos Ypos)) ;pawns can crown, the regular move system can't create new pieces so they have a different board creating system
@@ -576,10 +581,12 @@
     ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
     (else 'ERR-cant-recognize-piece)))
 
+
 (define (threatenedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;needs a color input (black or white) if not given X and Y of a piece
   (let ([dummy (makePiece #\D attackedColor)]
         [ATKcolor (invertColor attackedColor)])
     (checkDummyOnAllBoards (allNewBoards (updateBoard B Xpos Ypos dummy) (findAllColor B ATKcolor))))) ;it returns 4 on a crowning kills (4 different outcomes so all count)
+
 
 (define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
   (cond
