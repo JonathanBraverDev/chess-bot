@@ -3,10 +3,6 @@
 
 (define-struct state (B score color parent))
 
-#| notes
-i'll need to turn all my lists of moves to boards, pawn's gonna suck
-|#
-
 
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
@@ -64,7 +60,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 ;movement
 
 ;pawn section (its the only piece that gets one...)
-(define (PawnPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
+(define (PawnPossibleBoards B Xpos Ypos [color (getColor B Xpos Ypos)]) ;returns boards
   (let ([side  (sideFinder color)])
     (cond
       ((isOnStartingLane? Ypos (invertColor color)) (Pawn-Crowning B Xpos Ypos color side (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
@@ -78,6 +74,43 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
                                                               '()))))))))) ;more moves soon (ummmm NOPE XD)
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
+
+(define (PawnPossibleMoves  B Xpos Ypos [player #F] [color (getColor B Xpos Ypos)]) ;returns moves, and asks for input about crowning 'result'
+  (let ([side  (sideFinder color)])     ;player will trigger the crown choise, else it's gonna just predict the move without crowning
+    (cond
+      ((and player (isOnStartingLane? Ypos (invertColor color))) (choose-crowned B Xpos Ypos color (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
+      (else
+       (cons (list Xpos Ypos)
+             (flatten-lists
+              (removeAllOccurrencesOf '()
+                                      (list (pawnMoves-regularKills B Xpos Ypos side)
+                                            (pawnMoves-startingLane B Xpos Ypos side color)  
+                                            '()))))))))
+
+(define (choose-crowned B Xpos Ypos color movesL) ;origin X and Y, color... well, and the possible moves as input
+  (displayln "pick a move (index)")                ;it's a combination of 'selectMove' and 'Pawn-Crowning'
+  (print (rest movesL))
+  (let ([selectedMove (add1 (read))])
+    (cond
+      ((= selectedMove (length movesL)) (displayln "out of list input") (newline) (choose-crowned B Xpos Ypos color movesL))
+      (else
+       (let ([selectedX (first (list-ref movesL selectedMove))]
+             [selectedY (second (list-ref movesL selectedMove))])
+         (updateBoard (clearTileAt B Xpos Ypos) selectedX selectedY (choosePiece color)))))))
+
+(define (choosePiece color)
+  (displayln "pick crowned piece:")
+  (displayln "Queen (Q) 1")
+  (displayln "Rook (R) 2")
+  (displayln "Knight (H) 3")
+  (displayln "Bishop (B) 4")
+  (let ([piece (read)])
+    (cond
+      ((= piece 1) (makePiece #\Q color))
+      ((= piece 1) (makePiece #\R color))
+      ((= piece 1) (makePiece #\H color))
+      ((= piece 1) (makePiece #\B color))
+      (else (displayln "please pick a valid number") (newline)  (choosePiece color)))))
 
 (define (pawnMoves-regualarMove B Xpos Ypos side)
   (cond
@@ -380,8 +413,8 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
   (println L)
   (cond                                                      ;or just the origin in one move is avalible
-    ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
-    (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
+    ((empty? (rest L)) (list (possibleBoardsForTile B (first (first L)) (second (first L)))))
+    (else (cons (possibleBoardsForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
 
 (define (addOriginPosToDestanation L [index 1]) ;index 0 is the origin ;) (no bugs XD)
   (cond
@@ -519,18 +552,28 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
     (cond
-      ((empty? (rest pieces)) (possibleMovesForTile B pieceX pieceY))
-      (else (append (possibleMovesForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
+      ((empty? (rest pieces)) (possibleBoardsForTile B pieceX pieceY))
+      (else (append (possibleBoardsForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
 
 
-(define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)])
+(define (possibleBoardsForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;only the bot uses this functuion
   (cond
-    ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos)) ;pawns can crown, the regular move system can't create new pieces so they have a different board creating system
+    ((equal? target #\P) (PawnPossibleBoards B Xpos Ypos)) ;pawns can crown, the regular move system can't create new pieces so they have a different board creating system
     ((equal? target #\B) (boardsOfAllMoves B (BishopPossibleMoves B Xpos Ypos)))
     ((equal? target #\H) (boardsOfAllMoves B (KnightPossibleMoves B Xpos Ypos)))
     ((equal? target #\R) (boardsOfAllMoves B (RookPossibleMoves B Xpos Ypos)))
     ((equal? target #\Q) (boardsOfAllMoves B (QueenPossibleMoves B Xpos Ypos)))
     ((equal? target #\K) (boardsOfAllMoves B (KingPossibleMoves B Xpos Ypos)))
+    (else 'ERR-cant-recognize-piece)))
+
+(define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;this is for the player
+  (cond
+    ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos #T))
+    ((equal? target #\B) (BishopPossibleMoves B Xpos Ypos))
+    ((equal? target #\H) (KnightPossibleMoves B Xpos Ypos))
+    ((equal? target #\R) (RookPossibleMoves B Xpos Ypos))
+    ((equal? target #\Q) (QueenPossibleMoves B Xpos Ypos))
+    ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
     (else 'ERR-cant-recognize-piece)))
 
 (define (threatenedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;needs a color input (black or white) if not given X and Y of a piece
