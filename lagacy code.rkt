@@ -125,4 +125,20 @@
         (list (Xpos Ypos) #\R)
         (list (Xpos Ypos) #\Q)))
 
+
+(define (moveOptions B Xpos Ypos color)
+  (cond
+    ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
+    (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
+
+(define (selectMove B movesL color) ;its can force a move that leaves the king attacked, the search per piece needs to change
+  (cond
+    ((empty? (rest movesL)) (displayln "can't move") (selectTile B color))
+    (else 
+     (displayln "pick a move (index):")
+     (displayln (rest movesL)) ;to ignore origin location
+     (newline) 
+     (define moveIndex (add1 (read)))
+     (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
+
     
