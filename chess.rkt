@@ -3,11 +3,6 @@
 
 (define-struct state (B score color parent))
 
-#| notes
-i'll need to turn all my lists of moves to boards, pawn's gonna suck
-|#
-
-
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
              ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
@@ -306,23 +301,6 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-#|
-(define (moveOptions B Xpos Ypos color)
-  (cond
-    ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
-    (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
-
-(define (selectMove B movesL color) ;its can force a move that leaves the king attacked, the search per piece needs to change
-  (cond
-    ((empty? (rest movesL)) (displayln "can't move") (selectTile B color))
-    (else 
-     (displayln "pick a move (index):")
-     (displayln (rest movesL)) ;to ignore origin location
-     (newline) 
-     (define moveIndex (add1 (read)))
-     (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
-|#
-
 (define (PVEdemo B [color #\W] [human #T]) ;its a completly random bot
   (cond
     ((equal? color #\W) (displayln "white's turn"))
@@ -415,7 +393,6 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 
 ;minimax base
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
-  (println L)
   (cond                                                      ;or just the origin in one move is avalible
     ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
     (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
@@ -552,6 +529,9 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 
 
 (define (allNewBoards B pieces) ;pieces is the locations, given by find all
+                                ;NEEDS A '() cleanup on every call just to make sute it'll work properly
+  (println pieces)
+  
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
     (cond
@@ -564,12 +544,17 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 (define (possibleBoardsForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;only the bot uses this functuion
   (cond
     ((equal? target #\P) (PawnPossibleBoards B Xpos Ypos)) ;pawns can crown, the regular move system can't create new pieces so they have a different board creating system
-    ((equal? target #\B) (boardsOfAllMoves B (BishopPossibleMoves B Xpos Ypos)))
-    ((equal? target #\H) (boardsOfAllMoves B (KnightPossibleMoves B Xpos Ypos)))
-    ((equal? target #\R) (boardsOfAllMoves B (RookPossibleMoves B Xpos Ypos)))
-    ((equal? target #\Q) (boardsOfAllMoves B (QueenPossibleMoves B Xpos Ypos)))
-    ((equal? target #\K) (boardsOfAllMoves B (KingPossibleMoves B Xpos Ypos)))
+    ((equal? target #\B) (filterMovelessPieces B (BishopPossibleMoves B Xpos Ypos)))
+    ((equal? target #\H) (filterMovelessPieces B (KnightPossibleMoves B Xpos Ypos)))
+    ((equal? target #\R) (filterMovelessPieces B (RookPossibleMoves B Xpos Ypos)))
+    ((equal? target #\Q) (filterMovelessPieces B (QueenPossibleMoves B Xpos Ypos)))
+    ((equal? target #\K) (filterMovelessPieces B (KingPossibleMoves B Xpos Ypos)))
     (else 'ERR-cant-recognize-piece)))
+
+(define (filterMovelessPieces B L) ;just a buffer between 'boardsOfAllMoves' and deadly input (but no JK, it stops it from crushing...)
+  (cond
+    ((empty? (rest L)) '())
+    (else (boardsOfAllMoves B L))))
 
 (define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;this is for the player
   (cond
@@ -585,7 +570,7 @@ i'll need to turn all my lists of moves to boards, pawn's gonna suck
 (define (threatenedTile? B Xpos Ypos [attackedColor (getColor B Xpos Ypos)]) ;needs a color input (black or white) if not given X and Y of a piece
   (let ([dummy (makePiece #\D attackedColor)]
         [ATKcolor (invertColor attackedColor)])
-    (checkDummyOnAllBoards (allNewBoards (updateBoard B Xpos Ypos dummy) (findAllColor B ATKcolor))))) ;it returns 4 on a crowning kills (4 different outcomes so all count)
+    (checkDummyOnAllBoards (removeAllOccurrencesOf '() (allNewBoards (updateBoard B Xpos Ypos dummy) (findAllColor B ATKcolor)))))) ;it returns 4 on a crowning kills (4 different outcomes so all count)
 
 
 (define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
