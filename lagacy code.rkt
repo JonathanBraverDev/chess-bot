@@ -167,3 +167,9 @@
     (cons (moveTo B originX originY targetX targetY) '())))
 |#
 
+#| ;|useless - i need to add the 'else' statement to the 'possibleMovesForTile'... it sholud work
+(define (allPossibleMovesForColor B color [L (allMovesForColor B color)]) ;RETURNS a list of all possible moves in a '(originPOS destanationPOS) structure 
+  (cond                                                                   ;ignores pieces that cannot move                          
+    ((empty? L) '())
+    (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
+|#
