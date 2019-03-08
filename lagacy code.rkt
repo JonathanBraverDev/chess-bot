@@ -142,3 +142,28 @@
      (moveTo B (first (first movesL)) (second (first movesL)) (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))
 
     
+#| replaced by 'allNewBoards'
+(define (getAllMovesForColor B color) ;just removes (removes what??? (JK) it removes all 'empty moves' (as in piesec that have mo moves) from the move list)
+  (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
+
+
+(define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its a long list
+  (cond
+    ((= 3 (length L)) (makeLastMove B color L))
+    (else 
+     (let ([originX (first (first (first L)))]
+           [originY (second (first (first L)))]
+           [targetX (first (second (first L)))]
+           [targetY (second (second (first L)))])
+       (cond
+         ((empty? (rest L)) '())
+         (else (cons (moveTo B originX originY targetX targetY) (makeAllMoves B color (rest L))))))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
+
+(define (makeLastMove B color L)
+  (let ([originX (first (first L))]
+        [originY (second (first L))]
+        [targetX (first (second L))]
+        [targetY (second (second L))])
+    (cons (moveTo B originX originY targetX targetY) '())))
+|#
+
