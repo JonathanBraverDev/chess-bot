@@ -355,10 +355,6 @@
     ((equal? (getTileAt B Xpos Ypos) target) (list Xpos Ypos))
     (else (searchForKing B target (add1 Xpos) Ypos))))
 
-#|
-(define (makeKing color) ;just like make dummy (i can easily combine these (lattterrrr))
-  (string color #\K))
-|#
 
 (define (findAllColor B color [Xpos 0] [Ypos 0])
   (cond
@@ -411,12 +407,6 @@
     ((= index (length L)) '())
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
 
-#| ;|useless - i need to add the 'else' statement to the 'possibleMovesForTile'... it sholud work
-(define (allPossibleMovesForColor B color [L (allMovesForColor B color)]) ;RETURNS a list of all possible moves in a '(originPOS destanationPOS) structure 
-  (cond                                                                   ;ignores pieces that cannot move                          
-    ((empty? L) '())
-    (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
-|#
 
 (define (filterChecked B color [L (allNewBoards B (findAllColor B color))])
     (cond
@@ -429,30 +419,6 @@
     ((attackedKing? (first L) color) (ignoreBadMoves (rest L) color)) ;good move passed on
     (else (cons (first L) (ignoreBadMoves (rest L) color))))) ;bad move removed from list
 
-#| replaced by 'allNewBoards'
-(define (getAllMovesForColor B color) ;just removes (removes what??? (JK) it removes all 'empty moves' (as in piesec that have mo moves) from the move list)
-  (removeAllOccurrencesOf '() (allPossibleMovesForColor B color)))
-
-
-(define (makeAllMoves B color [L (allPossibleMovesForColor B color)]) ;first cuse its a long list
-  (cond
-    ((= 3 (length L)) (makeLastMove B color L))
-    (else 
-     (let ([originX (first (first (first L)))]
-           [originY (second (first (first L)))]
-           [targetX (first (second (first L)))]
-           [targetY (second (second (first L)))])
-       (cond
-         ((empty? (rest L)) '())
-         (else (cons (moveTo B originX originY targetX targetY) (makeAllMoves B color (rest L))))))))) ;YASSSSSSSSSSS working (WOW there... calm down... kids these days... (XD))
-
-(define (makeLastMove B color L)
-  (let ([originX (first (first L))]
-        [originY (second (first L))]
-        [targetX (first (second L))]
-        [targetY (second (second L))])
-    (cons (moveTo B originX originY targetX targetY) '())))
-|#
 
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
   ;RETURNS a board updated after the given move
