@@ -13,18 +13,18 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define B2 '(("WR" "--" "--" "--" "--" "WK" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "WQ")
-             ("--" "--" "WH" "BP" "--" "--" "WP" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "WB" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")))
+(define B2 '(("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")
+             ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
+             ("SS" "VV" "HH" "HH" "HH" "HH" "VV" "SS")
+             ("SS" "VV" "HH" "MM" "MM" "HH" "VV" "SS")
+             ("SS" "VV" "HH" "MM" "MM" "HH" "VV" "SS")
+             ("SS" "VV" "HH" "HH" "HH" "HH" "VV" "SS")
+             ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
+             ("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")))
 
 (define TST '(("--" "--" "WK") 
-              ("--" "BP" "--")
-              ("--" "--" "--")))
+              ("--" "--" "--")
+              ("--" "--" "BQ")))
 
 (define F "only checkmates and uncrowned pawn cause crashes hooray!!!")
 
@@ -48,13 +48,6 @@
 ;black piece => "B"
 ;white piece => "W"
 
-;value of each piece:
-;Pawn - 1
-;Bishop - 3
-;Knight - 3
-;Rook - 5
-;Queen - 9
-;King - game (JK... but realy, its game over if you lose him so its infinity)
 
 ;movement
 
@@ -603,6 +596,85 @@
     ((= counter times) (newline) (display "no crash"))
     (else (EVEbullshit B) (test B times (add1 counter)))))
 
+
+;scoring
+;value of each piece: (set in stone)
+;Pawn - 1
+;Bishop - 3
+;Knight - 3
+;Rook - 5
+;Queen - 9
+;King - game (JK... but realy, its game over if you lose him so its infinity)
+
+;bounuses are apresent of the piece value (so a pawn wont be worth more that a rook)
+(define mountaintopBounus 1.25) 
+(define hillsBounus 1.1)
+(define vallyBounus 1)
+(define swampBounus 0.9)
+;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
+;               'enamy cheched' a set bounus on attaking the king
+
+(define (scoreForBoard B color [pieces (findAllColor B color)]) ;just to get rid of the 0.99999999999999999
+  (round* (calcScore B color pieces)))                          ;you know what i'm talking about...
+ 
+(define (calcScore B color [pieces (findAllColor B color)])
+  (let ([pieceX (first (first pieces))]
+        [pieceY (second (first pieces))])
+  (cond
+    ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY))
+    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY) (scoreForBoard B color (rest pieces)))))))
+
+(define (giveValueToPiece B pieceX pieceY)
+  (let ([type (getType B pieceX pieceY)])
+    (cond
+      ((equal? type #\K) 0) ;ummm ikd waht to do... so... yea
+      ((isInHilltop? (list pieceX pieceY)) (* (baseValue type) mountaintopBounus))
+      ((isInHills? pieceX pieceY) (* (baseValue type) hillsBounus))
+      ((isInVally? pieceX pieceY) (* (baseValue type) vallyBounus))
+      (else (* (baseValue type) swampBounus))))) ;ummm everyting else is in the swamp
+
+(define (baseValue type)
+  (cond
+    ((equal? type #\P) 1)
+    ((equal? type #\B) 3)
+    ((equal? type #\H) 3)
+    ((equal? type #\R) 5)
+    ((equal? type #\Q) 9)
+    (else 0))) ;king will go here
+
+(define (isInHilltop? XYpos [L (list '(3 3) '(3 4) '(4 3) '(4 4))])
+  (cond
+    ((empty? L) #F)
+    ((equal? XYpos (first L)) #T)
+    (else (isInHilltop? XYpos (rest L)))))
+
+(define (isInHills? X Y)
+  (cond
+    ((and (= X 2) (isInRange? Y 2 5)) #T) 
+    ((and (= X 5) (isInRange? Y 2 5)) #T)
+    ((and (= Y 2) (isInRange? X 2 5)) #T) 
+    ((and (= Y 5) (isInRange? X 2 5)) #T)
+    (else #F)))
+
+(define (isInVally? X Y)
+  (cond
+    ((and (= X 1) (isInRange? Y 1 6)) #T) 
+    ((and (= X 6) (isInRange? Y 1 6)) #T)
+    ((and (= Y 1) (isInRange? X 1 6)) #T) 
+    ((and (= Y 6) (isInRange? X 1 6)) #T)
+    (else #F)))
+
+(define (isInRange? num start end)
+  (cond
+    ((and (> num (sub1 start)) (< num (add1 end))) #T)
+    (else #F)))
+
+(define (round* num)
+  (let ([top (ceiling (* num 100))])
+    (let ([rounder (round (- top (* num 100)))])
+      (* (- top rounder) 0.01 ))))
+
+
 ;debug tool(s)
 (define (listToBoard LL) ;LL = List List ;)
   (cond
@@ -613,7 +685,7 @@
   (cond
     ((empty? L) '())
     (else (cons (string (first L))  (lineFormat (rest L))))))
-
+                ;this dosent work (and its only debug so IDC)
 
 
          
