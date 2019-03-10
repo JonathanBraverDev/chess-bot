@@ -1,7 +1,7 @@
 #lang racket
 (require racket/list)
 
-(define-struct state (B score color parent kingAttacked?))
+(define-struct state (board score color parent #|kingAttacked?|#))
 
 
 (define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
@@ -12,6 +12,9 @@
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
+
+;(define B1-score (scoreForBoard B1 w))
+;(define start (make-state B1 B1-score  #\W 'none))
 
 (define B2 '(("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")
              ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
@@ -512,9 +515,7 @@
       ((empty? (rest pieces)) (possibleBoardsForTile B pieceX pieceY))
       (else (append (possibleBoardsForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
 
-;CURRENT CRASH LOCATION!!!!
-           ;given B1 w => ((0 7)) 
-           ;given B1 b => ((0 0))
+
 (define (possibleBoardsForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;only the bot uses this functuion
 
 #| debug
@@ -614,8 +615,10 @@
 ;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
 ;               'enamy cheched' a set bounus on attaking the king
 
-(define (scoreForBoard B color [pieces (findAllColor B color)]) ;just to get rid of the 0.99999999999999999
-  (round* (calcScore B color pieces)))                          ;you know what i'm talking about...
+
+(define (scoreForBoard B color [pieces (findAllColor B color)]) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+  (- (round* (calcScore B color pieces)) (round* (calcScore B (invertColor color) pieces))))
+
  
 (define (calcScore B color [pieces (findAllColor B color)])
   (let ([pieceX (first (first pieces))]
@@ -674,7 +677,59 @@
     (let ([rounder (round (- top (* num 100)))])
       (* (- top rounder) 0.01 ))))
 
+;state makers
+(define (AllMovesToStates parent color [L (allNewBoards (state-board parent) (findAllColor (state-board parent) color))]) ;L is all possible BOARDS
+  (cond
+    ((empty? L) '())
+    (else (cons (make-state (first L) 0 color parent) (AllMovesToStates parent color (rest L))))))
+                                     ;the score is calculated only at max depth
 
+(define (calcScoreForList L) ;L is a list of states
+  (let ([B (state-board (first L))]
+        [color (state-color (first L))] 
+        [parent (state-parent (first L))])
+    (cond
+      ((empty? (rest L)) '())
+      (else (make-state B (scoreForBoard B (invertColor color)) color parent)))))
+                                           ;the color is the next move so you need to invert it to evaluate the move just made
+                            
+;minimax
+
+#| WIP
+(define (bestMoveFrom B color)
+  (findBestMove (allBoardsFor)
+|#
+
+(define (minimax state maxDepth)
+  (let ([color (state-color state)])
+    (cond
+      ((equal? color #\W) (seekScore (AllMovesToStates state color) maxDepth +inf.0))
+      ((equal? color #\B) (seekScore (AllMovesToStates state color) maxDepth -inf.0))
+      (else "defq you want from me?"))))
+
+;ikd... maybe i'll just split min and max
+(define (seekScore L seekTarget [bestIndex 0] [bestValue 0]) ;L is a list of states, seekTraget is < (for smaller that 0) or > (for greater that 0)
+  (cond
+    ((= 1 1) 1)
+    (else 2))) ;PLACEHOLDER (obviusly)
+
+(define (scoreToDepth state maxDepth) ;that should... get all the states untill the depth.... no idea
+  (let ([color (state-color state)])
+  (cond
+    ((= maxDepth 1) (seekScore (calcScoreForList (AllMovesToStates state color)) (seekTargetFinder color)))
+    (else (seekScore (listCheck (AllMovesToStates state color) (sub1 maxDepth)) (seekTargetFinder color))))))
+
+(define (listCheck state maxDepth)
+    (let ([color (state-color state)])
+      (cond
+        ((list? state) (for-each (lambda (state) (scoreToDepth state maxDepth)) (AllMovesToStates state color)))
+        (else (scoreToDepth state maxDepth)))))
+
+(define (seekTargetFinder color)
+  (cond
+    ((equal? color #\W) +inf.0)
+    (else -inf.0)))
+  
 ;debug tool(s)
 (define (listToBoard LL) ;LL = List List ;)
   (cond
