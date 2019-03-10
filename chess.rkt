@@ -13,8 +13,6 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-;(define B1-score (scoreForBoard B1 w))
-;(define start (make-state B1 B1-score  #\W 'none))
 
 (define B2 '(("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")
              ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
@@ -486,6 +484,7 @@
 
 
 
+
 ;reworked
 (define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
   (let ([targetX (first (second L))]                                                    ;RETURNS the final BOARD of every move
@@ -690,7 +689,7 @@
         [parent (state-parent (first L))])
     (cond
       ((empty? (rest L)) '())
-      (else (make-state B (scoreForBoard B (invertColor color)) color parent)))))
+      (else (cons (make-state B (scoreForBoard B (invertColor color)) color parent) (calcScoreForList (rest L)))))))
                                            ;the color is the next move so you need to invert it to evaluate the move just made
                             
 ;minimax
@@ -710,8 +709,26 @@
 ;ikd... maybe i'll just split min and max
 (define (seekScore L seekTarget [bestIndex 0] [bestValue 0]) ;L is a list of states, seekTraget is < (for smaller that 0) or > (for greater that 0)
   (cond
-    ((= 1 1) 1)
+    ((= 1 1) (randomIndexFrom L))
     (else 2))) ;PLACEHOLDER (obviusly)
+
+
+(define (Min movesL [index 0] [bestIndex 0])
+  (cond
+    ((empty? movesL) '())
+    ((> index (sub1 (length movesL))) (list-ref movesL (randomIndexFrom bestIndex)))
+    ((= (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Min movesL (add1 index) (cons index bestIndex)))
+    ((< (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Min movesL (add1 index) (list index)))
+    (else (Min movesL (add1 index) bestIndex))))
+
+(define (Max movesL [index 0] [bestIndex 0])
+  (cond
+    ((empty? movesL) '())
+    ((> index (sub1 (length movesL))) (list-ref movesL (randomIndexFrom bestIndex)))
+    ((= (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Max movesL (add1 index) (cons index bestIndex)))
+    ((> (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Max movesL (add1 index) (list index)))
+    (else (Max movesL (add1 index) bestIndex))))
+
 
 (define (scoreToDepth state maxDepth) ;that should... get all the states untill the depth.... no idea
   (let ([color (state-color state)])
@@ -720,10 +737,10 @@
     (else (seekScore (listCheck (AllMovesToStates state color) (sub1 maxDepth)) (seekTargetFinder color))))))
 
 (define (listCheck state maxDepth)
-    (let ([color (state-color state)])
       (cond
-        ((list? state) (for-each (lambda (state) (scoreToDepth state maxDepth)) (AllMovesToStates state color)))
-        (else (scoreToDepth state maxDepth)))))
+        ((list? state) (let ([color (state-color (first state))])
+                         (map (lambda (state) (scoreToDepth state maxDepth)) (AllMovesToStates (first state) color))))
+        (else (scoreToDepth state maxDepth))))
 
 (define (seekTargetFinder color)
   (cond
@@ -742,14 +759,19 @@
     (else (cons (string (first L))  (lineFormat (rest L))))))
                 ;this dosent work (and its only debug so IDC)
 
+(define (printState state)
+  (printBoard (state-board state))
+  (println (state-score state))
+  (println (state-color state)))
+
 
          
 
 
+;startup
+(define B1-score (scoreForBoard B1 w))
+(define start (make-state B1 B1-score  #\W 'none))
 
 
 
 
-
-   
-  
