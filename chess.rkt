@@ -14,14 +14,14 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 
-(define B2 '(("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")
-             ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
-             ("SS" "VV" "HH" "HH" "HH" "HH" "VV" "SS")
-             ("SS" "VV" "HH" "MM" "MM" "HH" "VV" "SS")
-             ("SS" "VV" "HH" "MM" "MM" "HH" "VV" "SS")
-             ("SS" "VV" "HH" "HH" "HH" "HH" "VV" "SS")
-             ("SS" "VV" "VV" "VV" "VV" "VV" "VV" "SS")
-             ("SS" "SS" "SS" "SS" "SS" "SS" "SS" "SS")))
+(define B2 '(("--" "--" "--" "--" "WK" "--" "--" "--")
+             ("--" "--" "--" "--" "BQ" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "BP" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "BK" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("--" "--" "--" "--" "--" "--" "--" "--")))
 
 (define TST '(("--" "--" "WK") 
               ("--" "--" "--")
@@ -68,7 +68,7 @@
 ;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
 ;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
 
-(define (PawnPossibleMoves  B Xpos Ypos [player #F] [color (getColor B Xpos Ypos)]) ;returns moves, and asks for input about crowning 'result'
+(define (PawnPossibleMoves B Xpos Ypos [player #F] [color (getColor B Xpos Ypos)]) ;returns moves, and asks for input about crowning 'result'
   (let ([side  (sideFinder color)])     ;player will trigger the crown choise, else it's gonna just predict the move without crowning
     (cond
       ((and player (isOnStartingLane? Ypos (invertColor color))) (choose-crowned B Xpos Ypos color (removeAllOccurrencesOf '() (list (pawnMoves-regularKills B Xpos Ypos side) (pawnMoves-regualarMove B Xpos Ypos side)))))
@@ -157,12 +157,10 @@
     (else -1)))
 
 (define (pawnMoves-regularKills B Xpos Ypos side [L '(1 -1)] [color (getColor B Xpos Ypos)])
-  (let ([newX (+ Xpos (first L))]
-        [newY (+ Ypos side)])
     (cond
-      ((empty? (rest L)) '())
-      ((and (legalTile? B newX newY) (kill? B newX newY color)) (append (list newX newY) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
-      (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))))
+      ((empty? L) '())
+      ((and (legalTile? B (+ Xpos (first L)) (+ Ypos side)) (kill? B (+ Xpos (first L)) (+ Ypos side) color)) (append (list (+ Xpos (first L)) (+ Ypos side)) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
+      (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color))))
 
 ;regular move - 1 tile                                    DONE
 ;kills 1 diagonal left or rigth from movement direction   DONE
@@ -314,9 +312,9 @@
     ((= turnsToTie 0) (displayln "stalemate"))
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won"))
     (else
-     (cond
-       ((draw? B color) (print 'TIE))
-       (else                          ;its sooo bad
+;     (cond - removed for now
+;       ((draw? B color) (print 'TIE))
+;       (else                          ;its sooo bad
         (display "turn ") (println turnCounter)
         (cond
           ((equal? color #\W) (displayln "white's turn"))
@@ -327,7 +325,7 @@
               [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
           (cond
             ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
-            (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))))
+            (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount))))))) ;))
    
 
 ;board operations
@@ -615,8 +613,11 @@
 ;               'enamy cheched' a set bounus on attaking the king
 
 
-(define (scoreForBoard B color [pieces (findAllColor B color)]) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
-  (- (round* (calcScore B color pieces)) (round* (calcScore B (invertColor color) pieces))))
+(define (scoreForBoard B) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+  (cond
+    ((win? B w) -inf.0)
+    ((win? B b) +inf.0)
+    (- (round* (calcScore B #\W (findAllColor B #\W))) (round* (calcScore B #\B (findAllColor B #\B))))))
 
  
 (define (calcScore B color [pieces (findAllColor B color)])
@@ -624,7 +625,7 @@
         [pieceY (second (first pieces))])
   (cond
     ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY))
-    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY) (scoreForBoard B color (rest pieces)))))))
+    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY) (calcScore B color (rest pieces)))))))
 
 (define (giveValueToPiece B pieceX pieceY)
   (let ([type (getType B pieceX pieceY)])
@@ -707,10 +708,10 @@
       (else "defq you want from me?"))))
 
 ;ikd... maybe i'll just split min and max
-(define (seekScore L seekTarget [bestIndex 0] [bestValue 0]) ;L is a list of states, seekTraget is < (for smaller that 0) or > (for greater that 0)
+(define (seekScore L seekTarget) ;L is a list of states, seekTraget is < (for smaller that 0) or > (for greater that 0)
   (cond
-    ((= 1 1) (randomIndexFrom L))
-    (else 2))) ;PLACEHOLDER (obviusly)
+    ((= seekTarget +inf.0) (Max L))
+    (else (Min L)))) ;PLACEHOLDER (obviusly)
 
 
 (define (Min movesL [index 0] [bestIndex 0])
@@ -769,9 +770,8 @@
 
 
 ;startup
-(define B1-score (scoreForBoard B1 w))
-(define start (make-state B1 B1-score  #\W 'none))
-
+;(define B1-score (scoreForBoard B1))
+;(define start (make-state B1 B1-score  #\W 'none))
 
 
 
