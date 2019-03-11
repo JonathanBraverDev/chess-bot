@@ -308,6 +308,7 @@
             (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
 
 (define (EVEbullshit B [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
+  (printBoard B)
   (cond
     ((= turnsToTie 0) (displayln "stalemate"))
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won"))
@@ -319,7 +320,6 @@
         (cond
           ((equal? color #\W) (displayln "white's turn"))
           (else (displayln "black's turn")))
-        (printBoard B)
         (newline)
         (let ([newB (randomIndexFrom (filterChecked B color))]
               [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
