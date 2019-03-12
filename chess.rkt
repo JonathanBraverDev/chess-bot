@@ -417,9 +417,10 @@
   ;RETURNS a board updated after the given move
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
-;special conditions (wins, draws and other stuff) (unused yet)
-(define (win? B color) ;from the prespective of the loser
-  (cond ;TO update
+;special conditions (wins, draws and other stuff) 
+(define (win? B color) ;from the prespective of the looser
+  (cond ;TO update - needs to run first and see if the enamy's king in undeer attack in the BEGGINING of the turn
+        ; AND i need to check if the king is even there first, cuse the miinimax dosent check and just moves so it'll kill the king 
     ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
     (else #F)))
 
@@ -711,70 +712,27 @@
                             
 ;minimax
 
-#| WIP
-(define (bestMoveFrom B color)
-  (findBestMove (allBoardsFor)
+#| logic steps
+1: if its 1 return best move for the state's color
+2: else
+  2.1: list all children of all states
+  2.2: repeat 3.1 untill depth is 1
+  2.3: do step 2
+3: go up generation by generation picking the best move for each color
 |#
 
-(define (minimax state maxDepth)
-  (let ([color (state-color state)])
-    (cond
-      ((= maxDepth 1) (min\max (AllMovesToStates state color)))
-      ((equal? color #\W) (listCheck (AllMovesToStates state color) (sub1 maxDepth)))
-      ((equal? color #\B) (listCheck (AllMovesToStates state color) (sub1 maxDepth)))
-      (else "defq you want from me?"))))
-
-#|
-;ikd... maybe i'll just split min and max
-(define (seekScore L seekTarget) ;L is a list of states, seekTraget is < (for smaller that 0) or > (for greater that 0)
+(define (nextGen states depth) ;states is a list of at least one state
   (cond
-    ((= seekTarget +inf.0) (Max L))
-    (else (Min L)))) ;PLACEHOLDER (obviusly)
-|#
+    ((empty? states) (nextGen states depth)) ;it wont get to the next depth with an empty list
+    ((= depth 0 states)
+     (else (nextGen (let ([color (state-color (firat syates))]
+                          [parent (first states)])
+                      (allChildren states color parent))
+                    (sub1 depth))))))
 
-(define (min\max statesL)
-  (let ([parentColor (state-color (first statesL))])
-    (cond
-      ((equal? parentColor #\W) (Max statesL))
-      (else (Min statesL)))))
-
-
-(define (Min movesL [index 0] [bestIndex '(0)])
-  (cond
-    ((empty? movesL) '())
-    ((> index (sub1 (length movesL))) (list-ref movesL (randomIndexFrom bestIndex)))
-    ((= (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Min movesL (add1 index) (cons index bestIndex)))
-    ((< (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Min movesL (add1 index) (list index)))
-    (else (Min movesL (add1 index) bestIndex))))
-
-(define (Max movesL [index 0] [bestIndex '(0)])
-  (cond
-    ((empty? movesL) '())
-    ((> index (sub1 (length movesL))) (list-ref movesL (randomIndexFrom bestIndex)))
-    ((= (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Max movesL (add1 index) (cons index bestIndex)))
-    ((> (state-score (list-ref movesL index)) (state-score (list-ref movesL (first bestIndex)))) (Max movesL (add1 index) (list index)))
-    (else (Max movesL (add1 index) bestIndex))))
-
-
-(define (scoreToDepth state maxDepth) ;that should... get all the states untill the depth.... no idea
-  (let ([color (state-color state)])
-  (cond
-    ((= maxDepth 1) (min\max (calcScoreForList (AllMovesToStates state color))))
-    (else (min\max (listCheck (AllMovesToStates state color) (sub1 maxDepth)))))))
-
-(define (listCheck state maxDepth)
-      (cond
-        ((list? state) (let ([color (state-color (first state))])
-                         (map (lambda (state) (scoreToDepth state maxDepth)) (AllMovesToStates (first state) color))))
-        (else (scoreToDepth state maxDepth))))
-
-#|
-(define (seekTargetFinder color)
-  (cond
-    ((equal? color #\W) +inf.0)
-    (else -inf.0)))
-|#
-
+(define (allChildren states color parent))
+         
+;(append (allMovesToStates parent color) (nextGen (rest states) depth))
 
 ;debug tool(s)
 (define (listToBoard LL) ;LL = List List ;)
@@ -791,7 +749,16 @@
 (define (printState state)
   (printBoard (state-board state))
   (println (state-score state))
-  (println (state-color state)))
+  (println (state-color state))) ;printint the parent is kinda pointless
+
+(define (printAllGameHistory state)
+  (cond
+    ((equal? (state-parent state) 'none) 'done)
+    (else (let ([B (state-board state)]
+                [parent (state-patent state)])
+            (printBoard B) (newline)
+            (printAllGameHistory parent)))))
+
 
 
          
