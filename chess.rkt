@@ -219,7 +219,7 @@
   (cons (list Xpos Ypos)
         (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos (getColor B Xpos Ypos)))) ;to get the king out of the way of potential attackers
                                         
-
+#| |#
 (define (King-addPossibleMovesFromList B originX originY attackedColor [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))])
   (cond 
     ((empty? L) '())
@@ -233,7 +233,7 @@
     ((empty? L) '())
     ((threatenedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
     (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
-
+#| |#
 
 ;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
