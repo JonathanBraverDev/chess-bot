@@ -725,10 +725,15 @@
   (cond
     ((empty? states) (nextGen states depth)) ;it wont get to the next depth with an empty list
     ((= depth 0 states)
-     (else (nextGen (let ([color (state-color (firat syates))]
+     (else (min\max (nextGen (let ([color (state-color (firat syates))]
                           [parent (first states)])
                       (allChildren states color parent))
-                    (sub1 depth))))))
+                    (sub1 depth)))))))
+
+(define (min\max states) ;just sorting into min or max by the color
+  (let ([color (state-color (first states))])
+    ((equal? color #\W) (MAX)) ;placehilders
+    (else (MIN)))) ;placehilders
 
 (define (allChildren states color parent))
          
