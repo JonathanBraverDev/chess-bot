@@ -419,7 +419,7 @@
 
 ;special conditions (wins, draws and other stuff) (unused yet)
 (define (win? B color) ;from the prespective of the loser
-  (cond
+  (cond ;TO update
     ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
     (else #F)))
 
@@ -631,7 +631,7 @@
 
 (define (scoreForBoard B) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
   (cond
-    ((win? B w) -inf.0)
+    ((win? B w) -inf.0) 
     ((win? B b) +inf.0)
     (- (round* (calcScore B #\W (findAllColor B #\W))) (round* (calcScore B #\B (findAllColor B #\B))))))
 
