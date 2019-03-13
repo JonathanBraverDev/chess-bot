@@ -633,7 +633,7 @@
   (cond
     ((win? B w) +inf.0) 
     ((win? B b) -inf.0)
-    (- (round* (calcScore B #\W (findAllColor B #\W))) (round* (calcScore B #\B (findAllColor B #\B))))))
+    (else (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B)))))))
 
  
 (define (calcScore B color [pieces (findAllColor B color)])
@@ -779,7 +779,6 @@
 
 
 ;startup
-;(define B1-score (scoreForBoard B1))
-;(define start (make-state B1 B1-score  #\W 'none))
+;(define start (make-state B1 0 #\W 'none))
 
 
