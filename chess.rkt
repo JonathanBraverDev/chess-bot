@@ -214,26 +214,27 @@
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
                                             (rest (BishopPossibleMoves B Xpos Ypos))))))
 
-;king movement ;WORKING (now with a new and improved (actually... yeah, it is) check... check XD)
-(define (KingPossibleMoves B Xpos Ypos)
+;king movement
+(define (KingPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
   (cons (list Xpos Ypos)
-        (King-addPossibleMovesFromList (clearTileAt B Xpos Ypos) Xpos Ypos (getColor B Xpos Ypos)))) ;to get the king out of the way of potential attackers
+        (King-addPossibleMovesFromList B Xpos Ypos color))) ;to get the king out of the way of potential attackers
                                         
-#| |#
-(define (King-addPossibleMovesFromList B originX originY attackedColor [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))])
+
+(define (King-addPossibleMovesFromList B originX originY color [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))])
+;  (print (+ (first (first L)) originX)) (println (+ (second (first L)) originY))
+;  (println (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) color))
   (cond 
-    ((empty? L) '())
-    ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) 
-    ((threatenedTile? B (+ (first (first L)) originX) (+ (second (first L)) originY) attackedColor) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))) ;filteres out attacked tiles
-    (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY attackedColor (rest L))))))
+      ((empty? L) '())
+      ((not (LegalMove? B (+ (first (first L)) originX) (+ (second (first L)) originY) color)) (King-addPossibleMovesFromList B originX originY color (rest L)))
+      (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (King-addPossibleMovesFromList B originX originY color (rest L))))))
 
-
+#| dead function
 (define (filterOutKingDeaths B L attackedColor)
   (cond
     ((empty? L) '())
     ((threatenedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
     (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
-#| |#
+|#
 
 ;move options
 (define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
@@ -315,20 +316,18 @@
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
-    (else
-     (cond 
-       ((empty? (filterChecked B color)) (displayln "stalemate") (newline))
-       (else                          ;its sooo bad
-        (display "turn ") (println turnCounter)
-        (cond
-          ((equal? color #\W) (displayln "white's turn"))
-          (else (displayln "black's turn")))
-        (newline)
-        (let ([newB (randomIndexFrom (filterChecked B color))]
-              [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
-          (cond
-            ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
-            (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))))
+    ((empty? (filterChecked B color)) (displayln "stalemate") (newline))
+    (else                          ;its sooo bad
+     (display "turn ") (println turnCounter)
+     (cond
+       ((equal? color #\W) (displayln "white's turn"))
+       (else (displayln "black's turn")))
+     (newline)
+     (let ([newB (randomIndexFrom (filterChecked B color))]
+           [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
+       (cond
+         ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
+         (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
    
 
 ;board operations
@@ -403,7 +402,7 @@
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
 
 
-(define (filterChecked B color [L (allNewBoards B (findAllColor B color))])
+(define (filterChecked B color [L (allNewBoards B color)])
     (ignoreBadMoves L color)) ;just an activator for a better function that ACTUALLY does its job
 
 (define (ignoreBadMoves L color) ;'bad moves' are when the king is cheched and left that way (no idea for a better name... (psssst, what about 'can't run or be defended'?)
@@ -418,9 +417,11 @@
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
 ;special conditions (wins, draws and other stuff) 
-(define (win? B color) ;from the prespective of the looser
+(define (win? B color [start #F]) ;from the prespective of the looser
   (cond ;TO update - needs to run first and see if the enamy's king in undeer attack in the BEGGINING of the turn
         ; AND i need to check if the king is even there first, cuse the miinimax dosent check and just moves so it'll kill the king 
+    ((empty? (findKing B (invertColor color))) #T) ;all i need is this, actually
+    ((and (attackedKing? B color) start) #T)
     ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
     (else #F)))
 
@@ -500,7 +501,7 @@
     (else (printBoard (first L)) (newline) (printAllBoards (rest L)))))
 
 
-(define (allNewBoards B pieces) ;pieces is the locations, given by find all
+(define (allNewBoards B color [pieces (findAllColor B color)]) ;pieces is the locations, given by find all
                                 ;NEEDS A '() cleanup on every call just to make sute it'll work properly
 #| debug
   (println pieces)
@@ -512,7 +513,7 @@
         [pieceY (second (first pieces))])
     (cond
       ((empty? (rest pieces)) (possibleBoardsForTile B pieceX pieceY))
-      (else (append (possibleBoardsForTile B pieceX pieceY) (allNewBoards B (rest pieces)))))))
+      (else (append (possibleBoardsForTile B pieceX pieceY) (allNewBoards B color (rest pieces)))))))
 
 
 (define (possibleBoardsForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;only the bot uses this functuion
@@ -550,11 +551,9 @@
   (let ([dummy (makePiece #\D attackedColor)]
         [ATKcolor (invertColor attackedColor)])
     (let ([newB (updateBoard B Xpos Ypos dummy)])
-      (printBoard newB) (newline)
-      (or (checkDummyOnAllBoards (removeAllOccurrencesOf '() (allNewBoards newB (findAllColor B ATKcolor))))
-          (checkDummyOnAllBoards (removeAllOccurrencesOf '() (freeStyleKingBoards newB ATKcolor))))))
-  (print 'END))
+      (checkDummyOnAllBoards (removeAllOccurrencesOf '() (allNewBoards newB ATKcolor))))))
 
+#| will be adrresed in the scoring sunction |# 
 (define (freeStyleKingBoards B color [kingX (first (findKing B color))] [kingY (second (findKing B color))]) ;will return all the boards from kingFreeStyleMoves
   (boardsOfAllMoves B (cons (list kingX kingY) (freeStyleKingMoves B color kingX kingY))))
 
@@ -565,7 +564,7 @@
       ((empty? (rest L)) '())
       ((and (legalTile? B newX newY) (not (friendlyTile? B newX newY color))) (cons (list newX newY) (freeStyleKingMoves B color kingX kingY (rest L))))
       (else (freeStyleKingMoves B color kingX kingY (rest L))))))
-
+#| |#
 
 
 (define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
@@ -632,8 +631,8 @@
 
 (define (scoreForBoard B) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
   (cond
-    ((win? B w) -inf.0) 
-    ((win? B b) +inf.0)
+    ((win? B w) +inf.0) 
+    ((win? B b) -inf.0)
     (- (round* (calcScore B #\W (findAllColor B #\W))) (round* (calcScore B #\B (findAllColor B #\B))))))
 
  
@@ -695,10 +694,10 @@
       (* (- top rounder) 0.01 ))))
 
 ;state makers
-(define (AllMovesToStates parent color [L (allNewBoards (state-board parent) (findAllColor (state-board parent) color))]) ;L is all possible BOARDS
+(define (allMovesToStates parent [color (state-color parent)] [L (allNewBoards (state-board parent) color)]) ;L is all possible BOARDS
   (cond
     ((empty? L) '())
-    (else (cons (make-state (first L) 0 color parent) (AllMovesToStates parent color (rest L))))))
+    (else (cons (make-state (first L) 0 color parent) (allMovesToStates parent color (rest L))))))
                                      ;the score is calculated only at max depth
 
 (define (calcScoreForList L) ;L is a list of states
@@ -724,18 +723,20 @@
 (define (nextGen states depth) ;states is a list of at least one state
   (cond
     ((empty? states) (nextGen states depth)) ;it wont get to the next depth with an empty list
-    ((= depth 0 states)
-     (else (min\max (nextGen (let ([color (state-color (firat syates))]
-                          [parent (first states)])
-                      (allChildren states color parent))
-                    (sub1 depth)))))))
+    ((= depth 0) states)
+    (else (min\max (nextGen (allChildren states)
+                            (sub1 depth))))))
 
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (first states))])
-    ((equal? color #\W) (MAX)) ;placehilders
-    (else (MIN)))) ;placehilders
+    (cond
+      ((equal? color #\W) (argmax (lambda (state) (state-score state)) states))
+      (else (argmin (lambda (state) (state-score state)) states)))))
 
-(define (allChildren states color parent))
+(define (allChildren states)
+  (cond
+    ((empty? states) '())
+    (else (append (allMovesToStates (first states)) (allChildren (rest states))))))
          
 ;(append (allMovesToStates parent color) (nextGen (rest states) depth))
 
@@ -756,13 +757,21 @@
   (println (state-score state))
   (println (state-color state))) ;printint the parent is kinda pointless
 
+(define (printAllStates states)
+  (cond
+    ((empty? states) 'done)
+    (else (printState (first states)) (printAllStates (rest states)))))
+
 (define (printAllGameHistory state)
   (cond
     ((equal? (state-parent state) 'none) 'done)
     (else (let ([B (state-board state)]
-                [parent (state-patent state)])
+                [parent (state-parent state)])
             (printBoard B) (newline)
             (printAllGameHistory parent)))))
+;State Board
+(define (SB B [color w]) ;just converts aboard to an 'empty' state
+  (make-state B 0 color 'none))
 
 
 
@@ -772,6 +781,5 @@
 ;startup
 ;(define B1-score (scoreForBoard B1))
 ;(define start (make-state B1 B1-score  #\W 'none))
-
 
 
