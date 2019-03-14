@@ -730,8 +730,8 @@
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (first states))])
     (cond
-      ((equal? color #\W) (argmax (lambda (state) (state-score state)) states))
-      (else (argmin (lambda (state) (state-score state)) states)))))
+      ((equal? color #\W) (randomIndexFrom (first (group-by (lambda (state) (state-score state)) states))))
+      (else (randomIndexFrom (last (group-by (lambda (state) (state-score state)) states)))))))
 
 (define (allChildren states)
   (cond
