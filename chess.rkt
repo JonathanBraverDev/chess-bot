@@ -23,8 +23,8 @@
              ("--" "--" "--" "WH" "--" "--" "--" "WH")
              ("--" "--" "--" "BQ" "--" "--" "--" "WR")))
 
-(define TST '(("BK" "--" "WK") ;black king can kill the rook, lets just say its not the best idea
-              ("--" "WR" "--")
+(define TST '(("--" "--" "WK") ;black king can kill the rook, lets just say its not the best idea
+              ("--" "BK" "--")
               ("BB" "--" "--")))
 
 
@@ -417,14 +417,13 @@
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
 
 ;special conditions (wins, draws and other stuff) 
-(define (win? B color [start #F]) ;from the prespective of the looser
-  (cond ;TO update - needs to run first and see if the enamy's king in undeer attack in the BEGGINING of the turn
-        ; AND i need to check if the king is even there first, cuse the miinimax dosent check and just moves so it'll kill the king 
-    ((empty? (findKing B (invertColor color))) #T) ;all i need is this, actually
-    ((and (attackedKing? B color) start) #T)
-    ((and (attackedKing? B color) (empty? (filterChecked B color)))  #T)
-    (else #F)))
-
+(define (win? B color [start #F]) ;from the prespective of the WINNER
+  (let ([enemyColor (invertColor color)])
+    (cond ;start is true of falce (by defult) based on the mite of the ceck, before or after the side's move
+      ((empty? (findKing B (invertColor color))) #T) ; the king is already dead
+      ((and start (attackedKing? B (invertColor color))) #T) ; the king is under attack in the beggining of the turn (so he'll BE killed)
+      (else #F)))) 
+  
 ;abit tooooo agressive about putting games down
 (define (draw? B color) ;I may have missed someting, and every option is a new line ro make it easier to read and understand (so its not a page-long or)
   (cond
