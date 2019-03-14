@@ -719,11 +719,11 @@
 3: go up generation by generation picking the best move for each color
 |#
 
-(define (nextGen states depth) ;states is a list of at least one state
+(define (nextGen states depth) ;states is a LIST of at least one state
   (cond
     ((empty? states) (nextGen states depth)) ;it wont get to the next depth with an empty list
     ((= depth 0) states)
-    (else (min\max (nextGen (allChildren states)
+    (else (min\max (nextGen (allChildren states) ;this just picks one state
                             (sub1 depth))))))
 
 (define (min\max states) ;just sorting into min or max by the color
