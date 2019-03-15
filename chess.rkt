@@ -14,14 +14,14 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 
-(define B2 '(("--" "--" "--" "--" "--" "--" "--" "--")
+(define B2 '(("WR" "WH" "WB" "WQ" "WK" "WB" "--" "WR")
+             ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
+             ("--" "--" "--" "--" "--" "WH" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "WK")
-             ("--" "--" "--" "--" "--" "--" "--" "WP")
-             ("--" "--" "--" "--" "--" "--" "--" "BP")
-             ("--" "--" "--" "WH" "--" "--" "--" "WH")
-             ("--" "--" "--" "BQ" "--" "--" "--" "WR")))
+             ("--" "--" "--" "--" "--" "--" "--" "--")
+             ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
+             ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 (define TST '(("--" "--" "WK") ;black king can kill the rook, lets just say its not the best idea
               ("--" "BK" "--")
@@ -302,14 +302,18 @@
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-(define (PVEdemo B [color #\W] [human #T]) ;its a completly random bot
+(define (PVEdemo [B B1] [color #\W] [human #T]) ;its a completly random bot
   (cond
-    ((equal? color #\W) (displayln "white's turn"))
-    (else (displayln "black's turn")))
-  (cond
-    (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
-    (else (let ([move (randomIndexFrom (filterChecked B color))])
-            (PVEdemo (makeMove B move) (invertColor color) (invertPlayer human))))))
+    ((win? B color) (print color) (displayln " won"))
+    (else
+     (cond
+       ((equal? color #\W) (displayln "white's turn"))
+       (else (displayln "black's turn")))
+     (cond
+       (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
+       (else (let ([move (nextGen (list (SB B color)) 1)])
+               (let ([newB (state-board move)])
+                     (PVEdemo newB (invertColor color) (invertPlayer human)))))))))
 
 (define (EVEbullshit B [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
@@ -700,13 +704,13 @@
                                      ;the score is calculated only at max depth
 
 (define (calcScoreForList L) ;L is a list of states
-  (let ([B (state-board (first L))]
-        [color (state-color (first L))] 
-        [parent (state-parent (first L))])
     (cond
-      ((empty? (rest L)) '())
-      (else (cons (make-state B (scoreForBoard B) color parent) (calcScoreForList (rest L)))))))
-                                           ;the color is the next move so you need to invert it to evaluate the move just made
+      ((empty? L) '())
+      (else   (let ([B (state-board (first L))]
+                    [color (state-color (first L))] 
+                    [parent (state-parent (first L))])
+                (cons (make-state B (scoreForBoard B) color parent) (calcScoreForList (rest L)))))))
+ ;the color is the next move so you need to invert it to evaluate the move just made
                             
 ;minimax
 
@@ -721,13 +725,16 @@
 
 (define (nextGen states depth) ;states is a LIST of at least one state
   (cond
-    ((empty? states) (nextGen states depth)) ;it wont get to the next depth with an empty list
-    ((= depth 0) states)
-    (else (min\max (nextGen (allChildren states) ;this just picks one state
-                            (sub1 depth))))))
+    ((= depth 1) (min\max (calcScoreForList (allChildren (list (first states)))))) ;expected to get only one state
+    ((= depth 0) states) ;just in case
+    ((empty? states) "no states")
+    (else (min\max (map (lambda (state) (min\max (nextGen (allChildren (list state)) ;this just picks one state
+                                                          (sub1 depth))))
+                        states)))))
 
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (first states))])
+    (println color)
     (cond
       ((equal? color #\W) (randomIndexFrom (first (group-by (lambda (state) (state-score state)) states))))
       (else (randomIndexFrom (last (group-by (lambda (state) (state-score state)) states)))))))
