@@ -713,16 +713,6 @@
  ;the color is the next move so you need to invert it to evaluate the move just made
                             
 ;minimax
-
-#| logic steps
-1: if its 1 return best move for the state's color
-2: else
-  2.1: list all children of all states
-  2.2: repeat 3.1 untill depth is 1
-  2.3: do step 2
-3: go up generation by generation picking the best move for each color
-|#
-
 (define (nextGen states depth) ;states is a LIST of at least one state
   (cond
     ((= depth 1) (min\max (calcScoreForList (allChildren (list (first states)))))) ;expected to get only one state
@@ -798,5 +788,68 @@
 
 ;startup
 (define start (make-state B1 0 #\W 'none))
+
+
+
+;AFK's code
+(define (bot2 board)
+  (set p (player board))
+  (set h-vec (lambda (board) (h2 board (get p))))
+  (set depth 2)
+  (cond
+    {(> (get depth) (count (lambda (disk) (equal? disk n)) (flatten board)))
+     (set depth (count (lambda (disk) (equal? disk n)) (flatten board)))})
+  (minmax1 (shuffle (rest (develop (create-state board)))) (list (first (develop (create-state board)))))
+  )
+(define (minmax1 open current) ;(no pruning)
+  (cond
+    ;{(index-where open (lambda (state) (string? (state-parent state)))) "a step"} ;??
+    {(empty? open) (state-step (p-m-helper current))} ;(for-each (lambda (state) (display (~a (state-h state) ", "))) current) (newline)
+    {[and [not (has-parent? (first current))] [not (empty? open)]] (minmax1 open current)}
+    {(equal? (state-depth (first current)) (get depth))
+     (minmax1-helper open (p-m-helper (map (lambda (state) (create-state
+                                                            (state-board state) ((get h-vec) (state-board state))
+                                                            (state-step state) (state-parent state) (state-depth state))) current)))}
+    {(equal? (state-board (first current)) "has h") (minmax1-helper open (first current))}
+    {else (minmax1 (append (rest current) open) (develop (first current)))}
+    ))
+(define (minmax1-helper open state [parent (create-state "has h" (state-h state) (state-step (state-parent state)) (state-parent (state-parent state)) (state-depth (state-parent state)))]
+                        [index (index-where open (lambda (state) [and [not (has-h? state)] (same-state? (state-parent state) (state-parent parent))]))]) ;index of state's brother
+  (cond ;dont use takef and dropf they aren't safe ;edit: no bugs so idk maybe they are
+    {(false? index) (minmax1 (dropf open (lambda (state) (same-state? (state-parent state) (state-parent parent))))
+                             (list (p-m-helper (cons parent (takef open (lambda (state) (same-state? (state-parent state) (state-parent parent))))))))}
+    {else (minmax1 (cons parent (remove-at open index)) (develop (list-ref open index)))}
+    )
+  )
+(define (remove-at open index [counter 0])
+  (cond
+    {(= index counter) (rest open)}
+    {else (cons (first open) (remove-at (rest open) index (add1 counter)))}
+    ))
+
+#| minmax instructions:
+1. have open and current
+2. at first put the og board in current
+3. develop the og and put all in current
+4. develop the first in current and put the rest in open
+5. repeat 4 untill at the deepest
+6. at deepest pick min\max's parent in current
+7. put that parent in open and take his brother
+8. repeat from step 4
+|#
+(define (pick-minmax open)
+  (p-m-helper (takef open (lambda (state) (same-state? (state-parent state) (state-parent (first open)))))))
+
+(define (p-m-helper group) ;change this thing's name
+  (cond
+    {(odd? (state-depth (first group))) (argmax (lambda (state) (state-h state)) group)}
+    {else (argmin (lambda (state) (state-h state)) group)}
+    ))
+
+(define (has-h? state)
+  (number? (state-h state)))
+
+(define (has-parent? state)
+  (state? (state-parent state)))
 
 
