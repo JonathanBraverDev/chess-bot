@@ -700,7 +700,7 @@
 (define (allMovesToStates parent [color (state-color parent)] [L (allNewBoards (state-board parent) color)]) ;L is all possible BOARDS
   (cond
     ((empty? L) '())
-    (else (cons (make-state (first L) 0 color parent) (allMovesToStates parent color (rest L))))))
+    (else (cons (make-state (first L) 0 (invertColor color) parent) (allMovesToStates parent color (rest L))))))
                                      ;the score is calculated only at max depth
 
 (define (calcScoreForList L) ;L is a list of states
@@ -726,14 +726,19 @@
 (define (nextGen states depth) ;states is a LIST of at least one state
   (cond
     ((= depth 1) (min\max (calcScoreForList (allChildren (list (first states)))))) ;expected to get only one state
-    ((= depth 0) states) ;just in case
+    ((= depth 0) "depth is 0")
     ((empty? states) "no states")
-    (else (min\max (map (lambda (state) (min\max (nextGen (allChildren (list state)) ;this just picks one state
-                                                          (sub1 depth))))
+    (else (min\max (map (lambda (state) (min\max (list (nextGen (allChildren (list state)) ;this just picks one state
+                                                          (sub1 depth)))))
                         states)))))
 
+;(define (moreDepth states)
+;  (cond
+;    ((not (list? states)) (moreDepth (list states)))
+;    (())))
+
 (define (min\max states) ;just sorting into min or max by the color
-  (let ([color (state-color (first states))])
+  (let ([color (state-color (state-parent (first states)))])
     (println color)
     (cond
       ((equal? color #\W) (randomIndexFrom (first (group-by (lambda (state) (state-score state)) states))))
@@ -743,8 +748,15 @@
   (cond
     ((empty? states) '())
     (else (append (allMovesToStates (first states)) (allChildren (rest states))))))
-         
-;(append (allMovesToStates parent color) (nextGen (rest states) depth))
+
+(define (traceBack state depth)
+  (cond
+    ((= depth 0) state)
+    (else (traceBack (state-parent state) (sub1 depth)))))
+
+(define (minimax state depth)
+  (traceBack (nextGen (list state) depth) (sub1 depth)))
+  
 
 ;debug tool(s)
 (define (listToBoard LL) ;LL = List List ;)
@@ -785,6 +797,6 @@
 
 
 ;startup
-;(define start (make-state B1 0 #\W 'none))
+(define start (make-state B1 0 #\W 'none))
 
 
