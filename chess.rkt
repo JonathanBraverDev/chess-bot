@@ -424,10 +424,10 @@
 (define (win? B color [start #F]) ;from the prespective of the WINNER
   (let ([enemyColor (invertColor color)])
     (cond ;start is true of falce (by defult) based on the mite of the ceck, before or after the side's move
-      ((empty? (findKing B (invertColor color))) #T) ; the king is already dead
-      ((and start (attackedKing? B (invertColor color))) #T) ; the king is under attack in the beggining of the turn (so he'll BE killed)
-      (else #F)))) 
-  
+      ((empty? (findKing B enemyColor)) #T) ; the king is already dead
+      ((and start (attackedKing? B enemyColor)) #T) ; the king is under attack in the beggining of the turn (so he'll BE killed)
+      (else #F))))
+
 ;abit tooooo agressive about putting games down
 (define (draw? B color) ;I may have missed someting, and every option is a new line ro make it easier to read and understand (so its not a page-long or)
   (cond
@@ -632,11 +632,21 @@
 ;               'enamy cheched' a set bounus on attaking the king
 
 
-(define (scoreForBoard B) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+(define (scoreForBoard B color [start #F]) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+  (let ([winResult (winCheck B color start)])
+    (cond
+      (winResult winResult)
+      (else (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B))))))))
+  
+(define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
   (cond
-    ((win? B w) +inf.0) 
-    ((win? B b) -inf.0)
-    (else (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B)))))))
+    ((win? B color start) (winValue color))
+    (else #F)))
+
+(define (winValue color)
+  (cond
+    ((equal? color #\W) +inf.0)
+    (else -inf.0)))
 
  
 (define (calcScore B color [pieces (findAllColor B color)])
@@ -709,7 +719,7 @@
       (else   (let ([B (state-board (first L))]
                     [color (state-color (first L))] 
                     [parent (state-parent (first L))])
-                (cons (make-state B (scoreForBoard B) color parent) (calcScoreForList (rest L)))))))
+                (cons (make-state B (scoreForBoard B color) color parent) (calcScoreForList (rest L)))))))
  ;the color is the next move so you need to invert it to evaluate the move just made
                             
 ;minimax
@@ -722,10 +732,8 @@
                                                           (sub1 depth)))))
                         states)))))
 
-;(define (moreDepth states)
-;  (cond
-;    ((not (list? states)) (moreDepth (list states)))
-;    (())))
+
+
 
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (state-parent (first states)))])
@@ -743,6 +751,7 @@
   (cond
     ((= depth 0) state)
     (else (traceBack (state-parent state) (sub1 depth)))))
+
 
 (define (minimax state depth)
   (traceBack (nextGen (list state) depth) (sub1 depth)))
@@ -783,73 +792,38 @@
 
 
 
-         
-
-
 ;startup
 (define start (make-state B1 0 #\W 'none))
 
 
 
-;AFK's code
-(define (bot2 board)
-  (set p (player board))
-  (set h-vec (lambda (board) (h2 board (get p))))
-  (set depth 2)
-  (cond
-    {(> (get depth) (count (lambda (disk) (equal? disk n)) (flatten board)))
-     (set depth (count (lambda (disk) (equal? disk n)) (flatten board)))})
-  (minmax1 (shuffle (rest (develop (create-state board)))) (list (first (develop (create-state board)))))
-  )
-(define (minmax1 open current) ;(no pruning)
-  (cond
-    ;{(index-where open (lambda (state) (string? (state-parent state)))) "a step"} ;??
-    {(empty? open) (state-step (p-m-helper current))} ;(for-each (lambda (state) (display (~a (state-h state) ", "))) current) (newline)
-    {[and [not (has-parent? (first current))] [not (empty? open)]] (minmax1 open current)}
-    {(equal? (state-depth (first current)) (get depth))
-     (minmax1-helper open (p-m-helper (map (lambda (state) (create-state
-                                                            (state-board state) ((get h-vec) (state-board state))
-                                                            (state-step state) (state-parent state) (state-depth state))) current)))}
-    {(equal? (state-board (first current)) "has h") (minmax1-helper open (first current))}
-    {else (minmax1 (append (rest current) open) (develop (first current)))}
-    ))
-(define (minmax1-helper open state [parent (create-state "has h" (state-h state) (state-step (state-parent state)) (state-parent (state-parent state)) (state-depth (state-parent state)))]
-                        [index (index-where open (lambda (state) [and [not (has-h? state)] (same-state? (state-parent state) (state-parent parent))]))]) ;index of state's brother
-  (cond ;dont use takef and dropf they aren't safe ;edit: no bugs so idk maybe they are
-    {(false? index) (minmax1 (dropf open (lambda (state) (same-state? (state-parent state) (state-parent parent))))
-                             (list (p-m-helper (cons parent (takef open (lambda (state) (same-state? (state-parent state) (state-parent parent))))))))}
-    {else (minmax1 (cons parent (remove-at open index)) (develop (list-ref open index)))}
-    )
-  )
-(define (remove-at open index [counter 0])
-  (cond
-    {(= index counter) (rest open)}
-    {else (cons (first open) (remove-at (rest open) index (add1 counter)))}
-    ))
+;inportesd BFS
+;(define (findInList target L)
+;  (cond
+;    ((empty? L) #F)
+;    ((sameState? (first L) target) #T)
+;    (else (findInList target (rest L)))))
 
-#| minmax instructions:
-1. have open and current
-2. at first put the og board in current
-3. develop the og and put all in current
-4. develop the first in current and put the rest in open
-5. repeat 4 untill at the deepest
-6. at deepest pick min\max's parent in current
-7. put that parent in open and take his brother
-8. repeat from step 4
-|#
-(define (pick-minmax open)
-  (p-m-helper (takef open (lambda (state) (same-state? (state-parent state) (state-parent (first open)))))))
 
-(define (p-m-helper group) ;change this thing's name
+;(define (tryAllMoves open closed)
+;  (cond
+;    ((or (not (legalState? (first open))) (findInList (first open) closed)) (tryAllMoves (rest open) (cons (first open) closed)))
+;    ((and (equal? (state-C (first open)) 0) (equal? (state-M (first open)) 0) (equal? (state-boatSide (first open)) 'R)) (first open))
+;    (else (tryAllMoves (append (rest open) (makeAllMoves (first open))) (cons (first open) closed)))))
+
+(define (MAXdEPTH state depth)
+  ;(printState state)
+  ;(newline)
   (cond
-    {(odd? (state-depth (first group))) (argmax (lambda (state) (state-h state)) group)}
-    {else (argmin (lambda (state) (state-h state)) group)}
-    ))
+    ((= depth 0) (copyAndGiveScore state))
+    (else (MAXdEPTH (first (allMovesToStates state)) (sub1 depth)))))
 
-(define (has-h? state)
-  (number? (state-h state)))
+(define (copyAndGiveScore state)
+  (let ([B (state-board state)]
+        [color (state-color state)]
+        [parent (state-parent state)])
+    (make-state B (scoreForBoard B color #T) color parent)))
 
-(define (has-parent? state)
-  (state? (state-parent state)))
+
 
 
