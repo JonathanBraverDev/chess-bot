@@ -702,9 +702,7 @@
     (else #F)))
 
 (define (round* num)
-  (let ([top (ceiling (* num 100))])
-    (let ([rounder (round (- top (* num 100)))])
-      (* (- top rounder) 0.01 ))))
+  (/ (floor (* 100 num)) 100))
 
 ;state makers
 (define (allMovesToStates parent [color (state-color parent)] [L (allNewBoards (state-board parent) color)]) ;L is all possible BOARDS
@@ -737,7 +735,7 @@
 
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (state-parent (first states)))])
-    (println color)
+;    (println color)
     (cond
       ((equal? color #\W) (randomIndexFrom (first (group-by (lambda (state) (state-score state)) states))))
       (else (randomIndexFrom (last (group-by (lambda (state) (state-score state)) states)))))))
@@ -746,11 +744,6 @@
   (cond
     ((empty? states) '())
     (else (append (allMovesToStates (first states)) (allChildren (rest states))))))
-
-(define (traceBack state depth)
-  (cond
-    ((= depth 0) state)
-    (else (traceBack (state-parent state) (sub1 depth)))))
 
 
 (define (minimax state depth)
@@ -811,12 +804,16 @@
 ;    ((and (equal? (state-C (first open)) 0) (equal? (state-M (first open)) 0) (equal? (state-boatSide (first open)) 'R)) (first open))
 ;    (else (tryAllMoves (append (rest open) (makeAllMoves (first open))) (cons (first open) closed)))))
 
+(define (BS [state start] [depth 2])
+  (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state)))
+
 (define (MAXdEPTH state depth)
   ;(printState state)
   ;(newline)
   (cond
     ((= depth 0) (copyAndGiveScore state))
-    (else (MAXdEPTH (first (allMovesToStates state)) (sub1 depth)))))
+    (else (println (length (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))
+          (min\max (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))))
 
 (define (copyAndGiveScore state)
   (let ([B (state-board state)]
@@ -824,6 +821,8 @@
         [parent (state-parent state)])
     (make-state B (scoreForBoard B color #T) color parent)))
 
-
-
+(define (traceBack state depth)
+  (cond
+    ((= depth 0) state)
+    (else (traceBack (state-parent state) (sub1 depth)))))
 
