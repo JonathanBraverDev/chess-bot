@@ -764,6 +764,9 @@
     ((empty? states) 'done)
     (else (printState (first states)) (printAllStates (rest states)))))
 
+(define (printAllGroups groupedStates)
+  (for-each (lambda (states) (displayln "NEXT PARENT GROUP") (printAllStates states) (newline)) groupedStates))
+
 (define (printAllGameHistory state)
   (cond
     ((equal? (state-parent state) 'none) 'done)
@@ -783,12 +786,33 @@
 
 
 ;more minimax tries
-(define (MAXdEPTH state depth)
+(define (maxDepth state depth)
   ;(printState state)
   ;(newline)
   (cond
     ((or (= depth 0) (win? (state-board state) (state-color state))) (copyAndGiveScore state))
-    (else (min\max (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))))
+    (else (min\max (map (lambda (state) (maxDepth state (sub1 depth))) (allMovesToStates state))))))
+
+
+
+(define (lazyMinMax state depth [L (allStatesToDepth state depth)])
+  (println (length L))
+  (println (list? (first L)))
+  (newline)
+  (cond
+    ((not (list? (first L))) (traceBack (min\max L) depth)) ;it means there's only one group so just minimax the rest
+    (else (lazyMinMax state depth (map (lambda (states) (min\max states)) L)))))
+
+(define (updateParent states) ;will return a state with the parent's board but the score of the best child (WIP)
+  (traceBack (min\max states) 1) ;im leavinf it to crash so i wont forget it 
+
+(define (allStatesToDepth state depth)
+  (map (lambda (states) (calcScoreForList states)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
+  
+(define (developAllMoves depth [L (allMovesToStates state)])
+  (cond
+    ((= depth 0) L)
+    (else (developAllMoves (sub1 depth) (flatten (map (lambda (state) (allMovesToStates state)) L))))))
 
 
 (define (copyAndGiveScore state)
