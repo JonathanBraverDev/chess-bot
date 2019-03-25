@@ -23,9 +23,9 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define TST '(("--" "--" "WK") ;black king can kill the rook, lets just say its not the best idea
-              ("--" "BK" "--")
-              ("BB" "--" "--")))
+(define TST '(("WQ" "WK" "--") ;black king can kill the rook, lets just say its not the best idea
+              ("--" "--" "--")
+              ("--" "BK" "BQ")))
 
 
 (define b #\B) ;just for ease of input
@@ -732,14 +732,6 @@
 
 
 
-
-(define (min\max states) ;just sorting into min or max by the color
-  (let ([color (state-color (state-parent (first states)))])
-;    (println color)
-    (cond
-      ((equal? color #\W) (randomIndexFrom (first (group-by (lambda (state) (state-score state)) states))))
-      (else (randomIndexFrom (last (group-by (lambda (state) (state-score state)) states)))))))
-
 (define (allChildren states)
   (cond
     ((empty? states) '())
@@ -780,8 +772,13 @@
             (printBoard B) (newline)
             (printAllGameHistory parent)))))
 ;State Board
-(define (SB B [color w]) ;just converts aboard to an 'empty' state
-  (make-state B 0 color 'none))
+(define (SB B [color w] [parent 'none]) ;just converts aboard to an 'empty' state
+  (make-state B (scoreForBoard B color #T) color parent))
+
+(define (printAllScoreGroups groups)
+  (cond
+    ((empty? groups) 'done)
+    (else (display "the ") (print (state-score (first (first groups)))) (displayln " group:") (printAllStates (first groups)) (newline) (printAllScoreGroups (rest groups)))))
 
 
 
@@ -804,16 +801,14 @@
 ;    ((and (equal? (state-C (first open)) 0) (equal? (state-M (first open)) 0) (equal? (state-boatSide (first open)) 'R)) (first open))
 ;    (else (tryAllMoves (append (rest open) (makeAllMoves (first open))) (cons (first open) closed)))))
 
-(define (BS [state start] [depth 2])
-  (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state)))
 
 (define (MAXdEPTH state depth)
   ;(printState state)
   ;(newline)
   (cond
-    ((= depth 0) (copyAndGiveScore state))
-    (else (println (length (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))
-          (min\max (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))))
+    ((or (= depth 0) (win? (state-board state) (state-color state))) #| (displayln "returning: ") (printState (copyAndGiveScore state)) (newline) |# (copyAndGiveScore state))
+    (else (min\max (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))))
+
 
 (define (copyAndGiveScore state)
   (let ([B (state-board state)]
@@ -826,3 +821,29 @@
     ((= depth 0) state)
     (else (traceBack (state-parent state) (sub1 depth)))))
 
+
+(define (min\max states) ;just sorting into min or max by the color
+  (let ([color (state-color (state-parent (first states)))])
+    (printAllScoreGroups (sort* states))
+    (newline)
+;    (println color)
+    (cond
+      ((equal? color #\W) (randomIndexFrom (first (sort* states))))
+      (else (randomIndexFrom (last (sort* states)))))))
+
+(define (sort* states) ;used to sort the groups of states by score from high to low
+  (sort (group-by (lambda (state) (state-score state)) states) (lambda (a b) (> (state-score (first a)) (state-score (first b))))))
+
+
+#|
+1. get state
+2. get all kids
+3. run 1 to 3 untill max depth
+4.
+|#
+
+
+;wrong output
+(define TST-state (SB TST w))
+;(printAllStates (calcScoreForList (allMovesToStates TST-state)))
+;(printState (min\max (calcScoreForList (allMovesToStates TST-state))))
