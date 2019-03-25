@@ -772,7 +772,7 @@
             (printBoard B) (newline)
             (printAllGameHistory parent)))))
 ;State Board
-(define (SB B [color w] [parent 'none]) ;just converts aboard to an 'empty' state
+(define (SB B [color w] [parent 'none]) ;just converts aboard to a state
   (make-state B (scoreForBoard B color #T) color parent))
 
 (define (printAllScoreGroups groups)
@@ -782,31 +782,12 @@
 
 
 
-;startup
-(define start (make-state B1 0 #\W 'none))
-
-
-
-;inportesd BFS
-;(define (findInList target L)
-;  (cond
-;    ((empty? L) #F)
-;    ((sameState? (first L) target) #T)
-;    (else (findInList target (rest L)))))
-
-
-;(define (tryAllMoves open closed)
-;  (cond
-;    ((or (not (legalState? (first open))) (findInList (first open) closed)) (tryAllMoves (rest open) (cons (first open) closed)))
-;    ((and (equal? (state-C (first open)) 0) (equal? (state-M (first open)) 0) (equal? (state-boatSide (first open)) 'R)) (first open))
-;    (else (tryAllMoves (append (rest open) (makeAllMoves (first open))) (cons (first open) closed)))))
-
-
+;more minimax tries
 (define (MAXdEPTH state depth)
   ;(printState state)
   ;(newline)
   (cond
-    ((or (= depth 0) (win? (state-board state) (state-color state))) #| (displayln "returning: ") (printState (copyAndGiveScore state)) (newline) |# (copyAndGiveScore state))
+    ((or (= depth 0) (win? (state-board state) (state-color state))) (copyAndGiveScore state))
     (else (min\max (map (lambda (state) (MAXdEPTH state (sub1 depth))) (allMovesToStates state))))))
 
 
@@ -824,9 +805,6 @@
 
 (define (min\max states) ;just sorting into min or max by the color
   (let ([color (state-color (state-parent (first states)))])
-    (printAllScoreGroups (sort* states))
-    (newline)
-;    (println color)
     (cond
       ((equal? color #\W) (randomIndexFrom (first (sort* states))))
       (else (randomIndexFrom (last (sort* states)))))))
@@ -842,6 +820,8 @@
 4.
 |#
 
+;startup
+(define start (make-state B1 0 #\W 'none))
 
 ;wrong output
 (define TST-state (SB TST w))
