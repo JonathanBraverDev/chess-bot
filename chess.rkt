@@ -795,7 +795,7 @@
 
 
 
-(define (lazyMinMax state depth [L (allStatesToDepth state depth)])
+(define (lazyMinMax state depth [L (allStatesToDepth depth state)])
   (println (length L))
   (println (list? (first L)))
   (newline)
@@ -803,10 +803,15 @@
     ((not (list? (first L))) (traceBack (min\max L) depth)) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax state depth (map (lambda (states) (min\max states)) L)))))
 
-(define (updateParent states) ;will return a state with the parent's board but the score of the best child (WIP)
-  (traceBack (min\max states) 1) ;im leavinf it to crash so i wont forget it 
+(define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child DONE AND WORKING PERFECTLY
+  (let ([parent (traceBack (first childrenGroup) 1)])
+    (let ([parentBoard (state-board parent)]
+          [parentColor (state-color parent)]
+          [miniMaxedScore (state-score (min\max childrenGroup))]
+          [grandParent (traceBack parent 1)])
+      (make-state parentBoard miniMaxedScore parentColor grandParent)))) ;im leavinf it to crash so i wont forget it 
 
-(define (allStatesToDepth state depth)
+(define (allStatesToDepth depth [state start])
   (map (lambda (states) (calcScoreForList states)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
   
 (define (developAllMoves depth [L (allMovesToStates state)])
