@@ -173,3 +173,51 @@
     ((empty? L) '())
     (else (append (addOriginPosToDestanation (first L)) (allPossibleMovesForColor B color (rest L))))))
 |#
+
+#| dead function
+(define (filterOutKingDeaths B L attackedColor)
+  (cond
+    ((empty? L) '())
+    ((threatenedTile? B (first (first L)) (second (first L)) attackedColor) (filterOutKingDeaths B (rest L) attackedColor))
+    (else (cons (first L) (filterOutKingDeaths B (rest L) attackedColor)))))
+|#
+
+#| replaced by findAllColor
+(define (findPosOfAll B target [Xpos 0] [Ypos 0]) ;will (probably) be replaced by find all color, it rund once over the board, not 6 times for every piece type ;)
+  (cond                                           ;they're VERY similar anyway and i have no reay use for this one... (it's only used in itself... imma keep it but just as a relic)
+    ((= Ypos (length B)) '())
+    ((= Xpos (length (first B))) (findPosOfAll B target 0 (add1 Ypos)))
+    ((equal? (getTileAt B Xpos Ypos) target) (cons (list Xpos Ypos) (findPosOfAll B target (add1 Xpos) Ypos)))
+    (else (findPosOfAll B target (add1 Xpos) Ypos))))
+|#
+
+#| never actually worked
+(define (maxDepth state depth)
+  ;(printState state)
+  ;(newline)
+  (cond
+    ((or (= depth 0) (win? (state-board state) (state-color state))) (copyAndGiveScore state))
+    (else (min\max (map (lambda (state) (maxDepth state (sub1 depth))) (allMovesToStates state))))))
+|#
+
+#| more 'dead' code
+(define (nextGen states depth) ;states is a LIST of at least one state
+  (cond
+    ((= depth 1) (min\max (calcScoreForList (allChildren (list (first states)))))) ;expected to get only one state
+    ((= depth 0) "depth is 0")
+    ((empty? states) "no states")
+    (else (min\max (map (lambda (state) (min\max (list (nextGen (allChildren (list state)) ;this just picks one state
+                                                          (sub1 depth)))))
+                        states)))))
+
+
+
+(define (allChildren states)
+  (cond
+    ((empty? states) '())
+    (else (append (allMovesToStates (first states)) (allChildren (rest states))))))
+
+
+(define (minimax state depth)
+  (traceBack (nextGen (list state) depth) (sub1 depth)))
+|#
