@@ -14,14 +14,14 @@
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
 
-(define B2 '(("WR" "WH" "WB" "WQ" "WK" "WB" "--" "WR")
-             ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
-             ("--" "--" "--" "--" "--" "WH" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("--" "--" "--" "--" "--" "--" "--" "--")
-             ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
-             ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
+(define B2 (list '(-- -- -- -- -- WK -- --) ; the black king moves to (6, 5) and obviusly got killed
+                 '(-- -- WP -- WP WR -- --)
+                 '(-- WR WH WP WB -- -- --)
+                 '(-- WP -- WQ -- WP -- WP)
+                 '(-- BP -- -- -- BQ -- --)
+                 '(-- -- BB BP BP BP BP BK)
+                 '(-- BR BP BR BB -- BH --)
+                 '(-- -- -- -- -- -- -- --)))
 
 (define TST '(("WQ" "WK" "--") ;black king can kill the rook, lets just say its not the best idea
               ("--" "--" "--")
@@ -315,7 +315,7 @@
                (let ([newB (state-board move)])
                      (PVEdemo newB (invertColor color) (invertPlayer human)))))))))
 
-(define (EVEbullshit B [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
+(define (EVEbullshit [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
@@ -327,7 +327,7 @@
        ((equal? color #\W) (displayln "white's turn"))
        (else (displayln "black's turn")))
      (newline)
-     (let ([newB (randomIndexFrom (filterChecked B color))]
+     (let ([newB (state-board (lazyMinMax 2 (SB B color)))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
          ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
