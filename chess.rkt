@@ -496,8 +496,11 @@
     ((and (> num (sub1 start)) (< num (add1 end))) #T)
     (else #F)))
 
-(define (round* num)
+(define (round* num) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
   (/ (floor (* 100 num)) 100))
+
+(define (insertToEnd item list)
+  (reverse (cons item (reverse list))))
 
 
 ;reworked (ummmmmmm just the giant pile of new code I added)
@@ -632,7 +635,7 @@
 ;               'enamy cheched' a set bounus on attaking the king
 
 
-(define (scoreForBoard B color [start #F]) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+(define (scoreForBoard B color [start #F]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
@@ -643,7 +646,7 @@
     ((win? B color start) (winValue color))
     (else #F)))
 
-(define (winValue color)
+(define (winValue color) ;returns the 'target' (AKA win) value for the given color
   (cond
     ((equal? color #\W) +inf.0)
     (else -inf.0)))
@@ -672,7 +675,7 @@
     ((equal? type #\H) 3)
     ((equal? type #\R) 5)
     ((equal? type #\Q) 9)
-    (else 0))) ;king will go here
+    (else 0))) ;king will go here (theoreticly... that function is never run on him)
 
 (define (isInHilltop? XYpos [L (list '(3 3) '(3 4) '(4 3) '(4 4))])
   (cond
@@ -742,21 +745,30 @@
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax depth state (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
 
+#| abandoned attempt
 (define (prossesGroup depth state) ;WIP - will prosses one branch at a time, not all atonvce with a map function
   (cond
     ((= depth 1) (min\max (calcScoreForList (allMovesToStates state)))) ;returns the same state but with the best child's score
     (else 'WIP)))
+|#
+
+(define (runTST depth [state start])
+  (cond
+    ((= depth 0) state)
+    (else (tstfunction depth (allMovesToStates state)))))
+  
 
 (define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
+  ;(displayln "all oppenent moves from: ") (printState (state-parent state)) (newline) (printAllStates open) (newline)
   (cond
-    ((= depth 1) (min\max (calcScoreForList (allMovesToStates state))))
+    ((= depth 1) (min\max (calcScoreForList open)))
+    ((empty? (rest open)) (tstfunction (sub1 depth) (allMovesToStates state))) ;the first line is more likly so... preformance boost
     (else (updateParent (list (tstfunction (sub1 depth) (allMovesToStates state))
-                              (tstfunction depth (rest open)))))))
+                              (tstfunction depth (rest open))))))) ;not working and I have no idea y
 
-(define (insertToEnd item list)
-  (reverse (cons item (reverse list))))
 
 (define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
+  ;(display "STATES: ") (println childrenGroup)
   (let ([parent (traceBack (first childrenGroup) 1)])
     ;(printState parent)
     (let ([parentBoard (state-board parent)]
@@ -802,3 +814,7 @@
 
 ;startup
 (define start (make-state B1 0 #\W 'none))
+
+;random shit
+(define (crazyMyltiplay L1 L2)
+  (map (lambda (L) (map (lambda (x) (* L x)) L1)) L2))
