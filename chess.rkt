@@ -15,7 +15,7 @@
 
 
 (define B2 (list '(-- -- -- -- -- WK -- --) ; the black king moves to (6, 5) and obviusly got killed
-                 '(-- -- WP -- WP WR -- --)
+                 '(-- -- WP -- WP WR -- --) ; was depth of 1, irrelevent
                  '(-- WR WH WP WB -- -- --)
                  '(-- WP -- WQ -- WP -- WP)
                  '(-- BP -- -- -- BQ -- --)
@@ -745,14 +745,19 @@
     (KingPossibleMoves B (first kingPos) (second kingPos))))
 
 
-;minimax
+;minimax ;need optimazing so it wont save all the states at once
 (define (lazyMinMax depth [state start] [L (allStatesToDepth depth state)])
   (println (length L))
   (cond
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax depth state (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
 
-(define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child DONE AND WORKING PERFECTLY
+;(define (prossesGroup depth L) ;WIP - will prosses one branch at a time, not all atonvce with a map function
+;  (cond
+;    ((= depth 0) (updateParent (first L)))
+;    (else (
+
+(define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
   (let ([parent (traceBack (first childrenGroup) 1)])
     ;(printState parent)
     (let ([parentBoard (state-board parent)]
@@ -762,10 +767,11 @@
       ;(printState (make-state parentBoard miniMaxedScore parentColor grandParent))
       ;(newline)
       (make-state parentBoard miniMaxedScore parentColor grandParent))))
-
+;needs to be outed
 (define (allStatesToDepth depth [state start])
   (map (lambda (states) (calcScoreForList states)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
-  
+
+;needs to be outed
 (define (developAllMoves depth [L (allMovesToStates state)])
   (cond
     ((= depth 0) L)
