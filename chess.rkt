@@ -13,16 +13,6 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-
-(define B2 (list '(-- -- -- -- -- WK -- --) ; the black king moves to (6, 5) and obviusly got killed
-                 '(-- -- WP -- WP WR -- --) ; was depth of 1, irrelevent
-                 '(-- WR WH WP WB -- -- --)
-                 '(-- WP -- WQ -- WP -- WP)
-                 '(-- BP -- -- -- BQ -- --)
-                 '(-- -- BB BP BP BP BP BK)
-                 '(-- BR BP BR BB -- BH --)
-                 '(-- -- -- -- -- -- -- --)))
-
 (define TST '(("WQ" "WK" "--") ;black king can kill the rook, lets just say its not the best idea
               ("--" "--" "--")
               ("--" "BK" "BQ")))
@@ -752,10 +742,19 @@
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax depth state (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
 
-;(define (prossesGroup depth L) ;WIP - will prosses one branch at a time, not all atonvce with a map function
-;  (cond
-;    ((= depth 0) (updateParent (first L)))
-;    (else (
+(define (prossesGroup depth state) ;WIP - will prosses one branch at a time, not all atonvce with a map function
+  (cond
+    ((= depth 1) (min\max (calcScoreForList (allMovesToStates state)))) ;returns the same state but with the best child's score
+    (else 'WIP)))
+
+(define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
+  (cond
+    ((= depth 1) (min\max (calcScoreForList (allMovesToStates state))))
+    (else (updateParent (list (tstfunction (sub1 depth) (allMovesToStates state))
+                              (tstfunction depth (rest open)))))))
+
+(define (insertToEnd item list)
+  (reverse (cons item (reverse list))))
 
 (define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
   (let ([parent (traceBack (first childrenGroup) 1)])
@@ -767,6 +766,7 @@
       ;(printState (make-state parentBoard miniMaxedScore parentColor grandParent))
       ;(newline)
       (make-state parentBoard miniMaxedScore parentColor grandParent))))
+
 ;needs to be outed
 (define (allStatesToDepth depth [state start])
   (map (lambda (states) (calcScoreForList states)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
