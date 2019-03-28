@@ -760,10 +760,11 @@
 
 (define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
   ;(displayln "all oppenent moves from: ") (printState (state-parent state)) (newline) (printAllStates open) (newline)
+  (println depth)
   (cond
-    ((= depth 1) (min\max (calcScoreForList open)))
-    ((empty? (rest open)) (tstfunction (sub1 depth) (allMovesToStates state))) ;the first line is more likly so... preformance boost
-    (else (updateParent (list (tstfunction (sub1 depth) (allMovesToStates state))
+    ((= depth 1) (list (min\max (calcScoreForList open))))
+    ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state)))) ;the first line is more likly so... preformance boost
+    (else (updateParent (cons (tstfunction (sub1 depth) (allMovesToStates state))
                               (tstfunction depth (rest open))))))) ;not working and I have no idea y
 
 
@@ -796,7 +797,7 @@
         [parent (state-parent state)])
     (make-state B (scoreForBoard B color #T) color parent)))
 
-(define (traceBack state depth) ;returns 'depth' genarations of parents
+(define (traceBack state depth) ;returns 'depth' genarations of parents back
   (cond
     ((= depth 0) state)
     (else (traceBack (state-parent state) (sub1 depth)))))
@@ -818,3 +819,42 @@
 ;random shit
 (define (crazyMyltiplay L1 L2)
   (map (lambda (L) (map (lambda (x) (* L x)) L1)) L2))
+
+
+(define (CT [L '(1 2 3 4 5 6 7 8 9 10)]) ;CT - Consept Test
+  (cond
+    ((empty? (rest L)) (list (list (first L) (* 2 (first L)))))
+    (else (cons (list (first L) (* 2 (first L)))
+                (CT (rest L))))))
+
+
+(define (randomShit)
+(cons (tstfunction 1 (allMovesToStates start))
+ (cons (tstfunction 1 (drop (allMovesToStates start) 1))
+  (cons (tstfunction 1 (drop (allMovesToStates start) 2))
+   (cons (tstfunction 1 (drop (allMovesToStates start) 3))
+    (cons (tstfunction 1 (drop (allMovesToStates start) 4))
+     (cons (tstfunction 1 (drop (allMovesToStates start) 5))
+      (cons (tstfunction 1 (drop (allMovesToStates start) 6))
+       (cons (tstfunction 1 (drop (allMovesToStates start) 7))
+        (cons (tstfunction 1 (drop (allMovesToStates start) 8))
+         (cons (tstfunction 1 (drop (allMovesToStates start) 9))
+          (cons (tstfunction 1 (drop (allMovesToStates start) 10))
+           (cons (tstfunction 1 (drop (allMovesToStates start) 11))
+            (cons (tstfunction 1 (drop (allMovesToStates start) 12))
+             (cons (tstfunction 1 (drop (allMovesToStates start) 13))
+              (cons (tstfunction 1 (drop (allMovesToStates start) 14))
+               (cons (tstfunction 1 (drop (allMovesToStates start) 15))
+                (cons (tstfunction 1 (drop (allMovesToStates start) 16))
+                 (cons (tstfunction 1 (drop (allMovesToStates start) 17))
+                  (cons (tstfunction 1 (drop (allMovesToStates start) 18))
+                   (list (tstfunction 1 (drop (allMovesToStates start) 19))
+                   )))))))))))))))))))))
+
+
+
+
+
+         
+         
+         
