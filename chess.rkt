@@ -1,5 +1,6 @@
 #lang racket
 (require racket/list)
+(require graphics/graphics)
 
 (define-struct state (board score color parent #|kingAttacked?|#))
 
@@ -851,8 +852,87 @@
                    (list (tstfunction 1 (drop (allMovesToStates start) 19))
                    )))))))))))))))))))))
 
+;graphics
+(open-graphics)
+(define V1 (open-viewport "V1" 428 468))
+
+(define (drawLetter V posn letter [color "black"])
+  ((draw-string V) posn letter color))
+
+(define (deleteLetter V posn letter)
+  ((clear-string V) posn letter))
+
+(define (demoBoard V [letter "A"] [times 8] [lastPos 0])
+  (cond
+    ((= times 0) 'done)
+    (else (drawLetter V (make-posn (+ lastPos 50) 50) letter "black")
+          (demoBoard V letter (sub1 times) (+ 50 lastPos)))))
 
 
+;(demoBoard V1)
+;(demoBoard V1 "D")
+
+(define (drawBoard V)
+
+  ;vertical lines (no function... yet (or forever) maybe i'll add someting that takes the size of the board and scales but not now)
+  ((draw-line V) (make-posn 10 50) (make-posn 10 458))
+  ((draw-line V) (make-posn 61 50) (make-posn 61 458))
+  ((draw-line V) (make-posn 112 50) (make-posn 112 458))
+  ((draw-line V) (make-posn 163 50) (make-posn 163 458))
+  ((draw-line V) (make-posn 214 50) (make-posn 214 458))
+  ((draw-line V) (make-posn 265 50) (make-posn 265 458))
+  ((draw-line V) (make-posn 316 50) (make-posn 316 458))
+  ((draw-line V) (make-posn 367 50) (make-posn 367 458))
+  ((draw-line V) (make-posn 418 50) (make-posn 418 458))
+
+  ;horizontal lines
+  ((draw-line V) (make-posn 10 50) (make-posn 418 50))
+  ((draw-line V) (make-posn 10 101) (make-posn 418 101))
+  ((draw-line V) (make-posn 10 152) (make-posn 418 152))
+  ((draw-line V) (make-posn 10 203) (make-posn 418 203))
+  ((draw-line V) (make-posn 10 254) (make-posn 418 254))
+  ((draw-line V) (make-posn 10 305) (make-posn 418 305))
+  ((draw-line V) (make-posn 10 356) (make-posn 418 356))
+  ((draw-line V) (make-posn 10 407) (make-posn 418 407))
+  ((draw-line V) (make-posn 10 458) (make-posn 418 458))) ;no tile color for now
+
+
+(drawBoard V1)
+
+
+
+(define (boardPosToGraphicsPos Xpos Ypos)
+  (make-posn (+ 20 (+ 10 (* Xpos 51))) (+ 20 (+ 61 (* Ypos 51)))))
+;to senter i take the 'base number to senter in a 51*51 space' (20 (letter size is 11*11))
+;then the start of the lines (10 and 61)
+;and finally the offset by the nember of tiles (0 - 7 workes perfectly)
+
+
+;(drawLetter V1 (boardPosToGraphicsPos 0 0) "F")
+;(drawLetter V1 (boardPosToGraphicsPos 3 2) "W")
+;(drawLetter V1 (boardPosToGraphicsPos 6 5) "V")
+;(drawLetter V1 (boardPosToGraphicsPos 0 1) "T")
+
+
+;(define V2 (open-viewport "V2" 51 51))
+
+;(drawLetter V2 (make-posn 20 (+ 20 11)) "A")
+
+(define (clearGraphicBoard V B)
+  (for-each (lambda (L) (deleteLetter V (boardPosToGraphicsPos (first L) (second L)) (string (getType B (first L) (second L)))))
+         (append (findAllColor B #\W) (findAllColor B #\B)))
+  (drawBoard V))
+
+(define (fillGraphicBoard V B)
+  (for-each (lambda (L) (drawLetter V (boardPosToGraphicsPos (first L) (second L)) (string (getType B (first L) (second L))) (assignColor (getColor B (first L) (second L)))))
+       (append (findAllColor B #\W) (findAllColor B #\B))))
+
+(define (assignColor color)
+  (cond
+    ((equal? color #\W) "RoyalBlue")
+    (else "DarkRed")))
+
+                          
 
 
          
