@@ -379,12 +379,6 @@
     ((equal? (getType B Xpos Ypos) type) (cons (list Xpos Ypos) (findAllType B type (add1 Xpos) Ypos)))
     (else (findAllType B type (add1 Xpos) Ypos))))
 
-(define (isIn? L target)
-  (cond
-    ((empty? L) #F)
-    ((equal? (first L) target) #T)
-    (else (isIn? (rest L) target))))
-
 (define (updateBoard B Xpos Ypos input)
   (cond
     ((= Ypos 0) (cons (updateCol (first B) Xpos input) (rest B)))
@@ -503,6 +497,12 @@
 (define (insertToEnd item list)
   (reverse (cons item (reverse list))))
 
+(define (isIn? L target)
+  (cond
+    ((empty? L) #F)
+    ((equal? (first L) target) #T)
+    (else (isIn? (rest L) target))))
+
 
 ;reworked (ummmmmmm just the giant pile of new code I added)
 (define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
@@ -549,14 +549,14 @@
     ((empty? (rest L)) '())
     (else (boardsOfAllMoves B L))))
 
-(define (possibleMovesForTile B Xpos Ypos [target (getType B Xpos Ypos)]) ;this is for the player
+(define (possibleMovesForTile B Xpos Ypos [type (getType B Xpos Ypos)]) ;this is for the player
   (cond
-    ((equal? target #\P) (PawnPossibleMoves B Xpos Ypos #T))
-    ((equal? target #\B) (BishopPossibleMoves B Xpos Ypos))
-    ((equal? target #\H) (KnightPossibleMoves B Xpos Ypos))
-    ((equal? target #\R) (RookPossibleMoves B Xpos Ypos))
-    ((equal? target #\Q) (QueenPossibleMoves B Xpos Ypos))
-    ((equal? target #\K) (KingPossibleMoves B Xpos Ypos))
+    ((equal? type #\P) (PawnPossibleMoves B Xpos Ypos #T))
+    ((equal? type #\B) (BishopPossibleMoves B Xpos Ypos))
+    ((equal? type #\H) (KnightPossibleMoves B Xpos Ypos))
+    ((equal? type #\R) (RookPossibleMoves B Xpos Ypos))
+    ((equal? type #\Q) (QueenPossibleMoves B Xpos Ypos))
+    ((equal? type #\K) (KingPossibleMoves B Xpos Ypos))
     (else '())))
 
 
@@ -931,6 +931,44 @@
   (cond
     ((equal? color #\W) "RoyalBlue")
     (else "DarkRed")))
+
+(define (clickToboardPos V [posn (mouse-click-posn (get-mouse-click V))])
+  (list (floor (/ (- (posn-x posn) 10) 51)) (floor (/ (- (posn-y posn) 61) 51))))
+;the same values as in the posnToGraphics but without the 20
+
+(define (displayMassage V massage)
+  ((draw-string V) (make-posn 10 40) massage "Black"))
+
+(define (clearMassage V massage)
+  ((clear-string V) (make-posn 10 40) massage))
+
+(define (sayAndClear V massage) ;loud and clear ;)
+  (displayMassage V massage)
+  (sleep 1)
+  (clearMassage V  massage))
+
+;move selection (G)
+(define (selectPiece V B playerColor)
+  (displayMassage V "click a piece to move:") ;im to lazy to add an undo, not that its hard... but nahhhh
+  (let ([selectedTile (clickToboardPos V)])
+    (cond
+      ((not (equal? (getColor B (first selectedTile) (second selectedTile)) playerColor)) (clearMassage V  "click a piece to move: (you can't undo so be careful)")
+                                                                                          (sayAndClear V  "please pick your piece...")
+                                                                                          (selectPiece V B playerColor))
+      (else (clearMassage V  "click a piece to move: (you can't undo so be careful)")
+            (pickTarget selectedTile V B playerColor)))))
+
+
+(define (pickTarget movingPiece V B playerColor) ;returns a board, updated with the picked move
+  (displayMassage V "click the destination: (or on the piece you selected to pick again)")
+  (let ([selectedTile (clickToboardPos V)])
+    (print (possibleMovesForTile B (first movingPiece) (second movingPiece)))
+    (cond
+      ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (sayAndClear V  "back to selection...") (selectPiece V B playerColor)) ;ok... here it is
+      ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
+                                                                                                      (sayAndClear V  "can't go there...")
+                                                                                                      (pickTarget movingPiece V B playerColor))
+      (else (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
 
