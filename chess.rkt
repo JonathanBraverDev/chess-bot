@@ -322,17 +322,21 @@
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-(define (PVEdemo [B B1] [color #\W] [human #T]) ;its a completly random bot
+(define (PVEdemo [B B1] [color #\W] [human #T] [V V1]) ;its a completly random bot
+  (fillGraphicBoard V B)
   (cond
     ((win? B color) (print color) (displayln " won"))
     (else
+     ;(cond
+     ; ((equal? color #\W) (displayln "white's turn"))
+     ; (else (displayln "black's turn")))
      (cond
-       ((equal? color #\W) (displayln "white's turn"))
-       (else (displayln "black's turn")))
-     (cond
-       (human (PVEdemo (selectTile B color) (invertColor color) (invertPlayer human)))
+       (human (let ([newPlayerB (selectPiece V B color)])
+                (clearGraphicBoard V B)
+                (PVEdemo newPlayerB (invertColor color) (invertPlayer human))))
        (else (let ([newB (state-board (lazyMinMax 2 (SB B color)))])
-                     (PVEdemo newB (invertColor color) (invertPlayer human))))))))
+               (clearGraphicBoard V B)
+               (PVEdemo newB (invertColor color) (invertPlayer human))))))))
 
 (define (EVEbullshit [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
@@ -741,7 +745,7 @@
 
 ;minimax ;need optimazing so it wont save all the states at once
 (define (lazyMinMax depth [state start] [L (allStatesToDepth depth state)])
-  (println (length L))
+  ;(println (length L)) ;just printing the ammout of states calculated in each level
   (cond
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax depth state (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
@@ -962,13 +966,12 @@
 (define (pickTarget movingPiece V B playerColor) ;returns a board, updated with the picked move
   (displayMassage V "click the destination: (or on the piece you selected to pick again)")
   (let ([selectedTile (clickToboardPos V)])
-    (print (possibleMovesForTile B (first movingPiece) (second movingPiece)))
     (cond
       ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (sayAndClear V  "back to selection...") (selectPiece V B playerColor)) ;ok... here it is
       ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
                                                                                                       (sayAndClear V  "can't go there...")
                                                                                                       (pickTarget movingPiece V B playerColor))
-      (else (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
+      (else (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
 
