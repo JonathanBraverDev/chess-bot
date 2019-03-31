@@ -325,7 +325,7 @@
 (define (PVEdemo [B B1] [color #\W] [human #T] [V V1]) ;its a completly random bot
   (fillGraphicBoard V B)
   (cond
-    ((win? B color) (print color) (displayln " won"))
+    ((win? B color #T) (print color) (winMassage V color))
     (else
      ;(cond
      ; ((equal? color #\W) (displayln "white's turn"))
@@ -564,7 +564,7 @@
     (else '())))
 
 
-#| will be adrresed in the scoring sunction |# 
+#| will be adrresed in the scoring sunction
 (define (freeStyleKingBoards B color [kingX (first (findKing B color))] [kingY (second (findKing B color))]) ;will return all the boards from kingFreeStyleMoves
   (boardsOfAllMoves B (cons (list kingX kingY) (freeStyleKingMoves B color kingX kingY))))
 
@@ -575,7 +575,7 @@
       ((empty? (rest L)) '())
       ((and (legalTile? B newX newY) (not (friendlyTile? B newX newY color))) (cons (list newX newY) (freeStyleKingMoves B color kingX kingY (rest L))))
       (else (freeStyleKingMoves B color kingX kingY (rest L))))))
-#| |#
+|#
 
 
 (define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
@@ -901,7 +901,7 @@
   ((draw-line V) (make-posn 10 458) (make-posn 418 458))) ;no tile color for now
 
 
-(drawBoard V1)
+;(drawBoard V1)
 
 
 
@@ -951,6 +951,11 @@
   (sleep 1)
   (clearMassage V  massage))
 
+(define (winMassage V color) ;the color that won, not the color of the text
+  (cond
+    ((equal? color #\W) (displayMassage V "White won"))
+    (else (displayMassage V "Black won"))))
+
 ;move selection (G)
 (define (selectPiece V B playerColor)
   (displayMassage V "click a piece to move:") ;im to lazy to add an undo, not that its hard... but nahhhh
@@ -976,6 +981,8 @@
                           
 
 
-         
-         
+;main
+(define (play)
+  (drawBoard V1)
+  (PVEdemo))
          
