@@ -764,13 +764,36 @@
   
 
 (define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
-  ;(displayln "all oppenent moves from: ") (printState (state-parent state)) (newline) (printAllStates open) (newline)
-  (println depth)
+  ;(print (length open)) (display " ") (println depth)
   (cond
-    ((= depth 1) (list (min\max (calcScoreForList open))))
+    ((= depth 1) (min\max (calcScoreForList open)))
     ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state)))) ;the first line is more likly so... preformance boost
-    (else (updateParent (cons (tstfunction (sub1 depth) (allMovesToStates state))
-                              (tstfunction depth (rest open))))))) ;not working and I have no idea y
+    (else (list (TST2 (flatten (cons (tstfunction (sub1 depth) (allMovesToStates state)) ;returns the best states
+                                     (tstfunction depth (rest open)))))))))
+
+(define (TST2 L)
+  #| debug
+  (println L)
+  (println 'comparing:)
+  (printState (first L))
+  (printState (second L))
+  (newline)
+  (println 'picked:)
+  |#
+  (let ([invertedState (copyAndChangeColor (first L))])
+    ;  (printState (min\max (cons invertedState (rest L))))
+    (copyAndChangeColor (min\max (cons invertedState (rest L)))))) ;undoing the change to avoid messing up the game
+
+(define (copyAndChangeColor state) ;changes only to color of the parent to the other player's (to 'trick' the min\max to pick the correct move)
+  (let ([parentB (state-board (state-parent state))]
+        [parentScore (state-score (state-parent state))]
+        [grandParent (state-parent (state-parent state))]
+        [B (state-board state)]
+        [score (state-score state)]
+        [color (state-color state)]
+        [parent (state-parent state)])
+    (make-state B score color (make-state parentB parentScore color grandParent))))
+                                                             ;the inverted color is the same as the cild's
 
 
 (define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
