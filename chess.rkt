@@ -762,38 +762,22 @@
     ((= depth 0) state)
     (else (tstfunction depth (allMovesToStates state)))))
   
-
-(define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
-  ;(print (length open)) (display " ") (println depth)
+                         ;nextGen shuld help....
+(define (tstfunction depth open nextGen [state (first open)]) ;open is (allMovesToStates state)
+  (print (length open)) (display " ") (println depth)
   (cond
     ((= depth 1) (min\max (calcScoreForList open)))
     ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state)))) ;the first line is more likly so... preformance boost
-    (else (list (TST2 (flatten (cons (tstfunction (sub1 depth) (allMovesToStates state)) ;returns the best states
-                                     (tstfunction depth (rest open)))))))))
+    (else (list (bestOftwo (flatten (cons (tstfunction (sub1 depth) (allMovesToStates state)) ;returns the best states
+                                          (tstfunction depth (rest open)))))))))
 
-(define (TST2 L)
-  #| debug
+(define (bestOftwo L)
   (println L)
-  (println 'comparing:)
-  (printState (first L))
-  (printState (second L))
-  (newline)
-  (println 'picked:)
-  |#
-  (let ([invertedState (copyAndChangeColor (first L))])
-    ;  (printState (min\max (cons invertedState (rest L))))
-    (copyAndChangeColor (min\max (cons invertedState (rest L)))))) ;undoing the change to avoid messing up the game
-
-(define (copyAndChangeColor state) ;changes only to color of the parent to the other player's (to 'trick' the min\max to pick the correct move)
-  (let ([parentB (state-board (state-parent state))]
-        [parentScore (state-score (state-parent state))]
-        [grandParent (state-parent (state-parent state))]
-        [B (state-board state)]
-        [score (state-score state)]
-        [color (state-color state)]
-        [parent (state-parent state)])
-    (make-state B score color (make-state parentB parentScore color grandParent))))
-                                                             ;the inverted color is the same as the cild's
+  (let ([color (state-color (first L))]) ;its the next color, so the player making the move had it inverted
+    (let ([sortedL (sort L (lambda (a b) (> (state-score a) (state-score b))))])
+    (cond
+      ((equal? color #\B) (second sortedL))
+      (else (first L))))))
 
 
 (define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
@@ -839,6 +823,12 @@
 
 (define (sort* states) ;used to sort the groups of states by score from high to low
   (sort (group-by (lambda (state) (state-score state)) states) (lambda (a b) (> (state-score (first a)) (state-score (first b))))))
+
+
+;genetic algorithm
+       ;Free For All
+(define (FFA botL)
+  'pass)
 
 
 ;startup
