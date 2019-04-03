@@ -950,7 +950,11 @@
     (else "DarkRed")))
 
 (define (clickToboardPos V [posn (mouse-click-posn (get-mouse-click V))])
-  (list (floor (/ (- (posn-x posn) 10) 51)) (floor (/ (- (posn-y posn) 61) 51))))
+  (let ([X (floor (/ (- (posn-x posn) 10) 51))]
+        [Y (floor (/ (- (posn-y posn) 61) 51))])
+    (cond
+      ((or (< X 0) (> X 7) (< Y 0) (> Y 7)) (clickToboardPos V))
+      (else (list X Y)))))
 ;the same values as in the posnToGraphics but without the 20
 
 (define (displayMassage V massage)
