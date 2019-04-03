@@ -644,7 +644,7 @@
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
-      (else (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B))))))))
+      (else (- (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B)))))))))
   
 (define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
   (cond
