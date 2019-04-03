@@ -639,12 +639,14 @@
 ;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
 ;               'enamy cheched' a set bounus on attaking the king
 
+(define defultValues (list mountaintopBounus hillsBounus vallyBounus swampBounus #|more values|#))
+;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
-(define (scoreForBoard B color [start #F]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
+(define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
-      (else (round* (- (calcScore B #\W (findAllColor B #\W)) (calcScore B #\B (findAllColor B #\B))))))))
+      (else (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters)))))))
   
 (define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
   (cond
@@ -657,21 +659,21 @@
     (else -inf.0)))
 
  
-(define (calcScore B color [pieces (findAllColor B color)])
+(define (calcScore B color [pieces (findAllColor B color)] [parameters defultValues])
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
   (cond
-    ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY))
-    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY) (calcScore B color (rest pieces)))))))
+    ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY parameters))
+    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY parameters) (calcScore B color (rest pieces) parameters))))))
 
-(define (giveValueToPiece B pieceX pieceY)
+(define (giveValueToPiece B pieceX pieceY [parameters defultValues])
   (let ([type (getType B pieceX pieceY)])
     (cond
       ((equal? type #\K) 0) ;ummm ikd waht to do... so... yea
-      ((isInHilltop? (list pieceX pieceY)) (* (baseValue type) mountaintopBounus))
-      ((isInHills? pieceX pieceY) (* (baseValue type) hillsBounus))
-      ((isInVally? pieceX pieceY) (* (baseValue type) vallyBounus))
-      (else (* (baseValue type) swampBounus))))) ;ummm everyting else is in the swamp
+      ((isInHilltop? (list pieceX pieceY)) (* (baseValue type) (first parameters)))
+      ((isInHills? pieceX pieceY) (* (baseValue type) (second parameters)))
+      ((isInVally? pieceX pieceY) (* (baseValue type) (third parameters)))
+      (else (* (baseValue type) (fourth parameters)))))) ;ummm everyting else is in the swamp
 
 (define (baseValue type)
   (cond
@@ -826,13 +828,22 @@
 
 
 ;genetic algorithm
-       ;Free For All
-(define (FFA botL)
-  'pass)
+(define-struct bot (parameters winCounter)) ;e and f unused (for now)
+             ;score calculation paremeters in list form
+(define (newBot paremeter)
+  (make-bot paremeter 0))
 
+;kinda bot sex
+(define (mate bot1 bot2) ;WIP
+  (let ([parameters1 (bot-parameters bot1)]
+        [parameters2 (bot-parameters bot2)])
+    (map (randomizeParameter))))
 
-;startup
-(define start (make-state B1 0 #\W 'none))
+;(define (machBots botL)
+;  (
+
+(define (botDuel bot1 bot2)
+
 
 ;random shit
 (define (crazyMyltiplay L1 L2)
@@ -996,7 +1007,8 @@
       (else (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
-
+;startup
+(define start (make-state B1 0 #\W 'none))
 
 ;main
 (define (play)
