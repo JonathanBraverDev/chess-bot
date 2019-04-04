@@ -19,6 +19,25 @@
               ("--" "BK" "BQ")))
 
 
+(define crash (list '("--" "--" "--" "--" "WK" "--" "--" "--") ;crash, all
+                    '("WP" "--" "--" "--" "--" "WR" "--" "--")
+                    '("--" "--" "--" "WR" "--" "--" "--" "--")
+                    '("--" "--" "--" "WB" "--" "BP" "--" "--")
+                    '("--" "--" "--" "WQ" "--" "--" "--" "--")
+                    '("--" "--" "--" "--" "--" "--" "--" "--")
+                    '("--" "--" "--" "--" "--" "--" "--" "BK")
+                    '("--" "--" "--" "--" "--" "--" "--" "--")))
+
+;(-- -- -- -- -- -- -- --) crash too
+;(-- -- -- -- -- -- -- --)
+;(-- -- -- -- -- -- BB --)
+;(-- -- -- WK -- -- BP --)
+;(BK -- -- WH -- -- -- --)
+;(-- -- -- BR -- -- -- BP)
+;(-- -- -- -- -- -- -- --)
+;(-- -- -- -- -- -- -- --)
+
+
 (define b #\B) ;just for ease of input
 (define w #\W) ;yeah, im THAT lazy
 
@@ -454,7 +473,7 @@
 
  ;draw conditions
 (define (onlyKingsLeft? B color) ;king duel
-  ((= (length (findAllPeices B)) (length #|just to be sure|# (findAllType #\K B)) 2) #T))
+  ((= (length (findAllPieces B)) (length #|just to be sure|# (findAllType #\K B)) 2) #T))
 
 (define (3TimesRepetition state) ;3 times the same board
   (let ([sameBoards (repetitionCheck (state-board state) state)])
@@ -738,13 +757,13 @@
 (define (SB B [color w] [parent 'none]) ;just converts aboard to a state
   (make-state B (scoreForBoard B color #T) color parent))
 
-(define (calcScoreForList L) ;L is a list of states
+(define (calcScoreForList L [parameters defultValues]) ;L is a list of states
     (cond
       ((empty? L) '())
       (else   (let ([B (state-board (first L))]
                     [color (state-color (first L))] 
                     [parent (state-parent (first L))])
-                (cons (make-state B (scoreForBoard B color) color parent) (calcScoreForList (rest L)))))))
+                (cons (make-state B (scoreForBoard B color parameters) color parent) (calcScoreForList (rest L)))))))
  ;the color is the next move so you need to invert it to evaluate the move just made
 
 
@@ -766,11 +785,11 @@
 
 
 ;minimax ;need optimazing so it wont save all the states at once
-(define (lazyMinMax depth [state start] [L (allStatesToDepth depth state)])
+(define (lazyMinMax depth [state start] [parameters defultValues] [L (allStatesToDepth depth state parameters)])
   ;(println (length L)) ;just printing the ammout of states calculated in each level
   (cond
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
-    (else (lazyMinMax depth state (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
+    (else (lazyMinMax depth state parameters (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
 
 #| abandoned attempt
 (define (prossesGroup depth state) ;WIP - will prosses one branch at a time, not all atonvce with a map function
@@ -815,8 +834,8 @@
       (make-state parentBoard miniMaxedScore parentColor grandParent))))
 
 ;needs to be outed
-(define (allStatesToDepth depth [state start])
-  (map (lambda (states) (calcScoreForList states)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
+(define (allStatesToDepth depth [state start] [parameters defultValues])
+  (map (lambda (states) (calcScoreForList states parameters)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
 
 ;needs to be outed
 (define (developAllMoves depth [L (allMovesToStates state)])
@@ -854,15 +873,41 @@
   (make-bot paremeter 0))
 
 ;kinda bot sex
-(define (mate bot1 bot2) ;WIP
-  (let ([parameters1 (bot-parameters bot1)]
-        [parameters2 (bot-parameters bot2)])
-    (map (randomizeParameter))))
+;(define (mate bot1 bot2) ;WIP
+;  (let ([parameters1 (bot-parameters bot1)]
+;        [parameters2 (bot-parameters bot2)])
+;    (map (randomizeParameter))))
 
-;(define (machBots botL)
-;  (
 
-(define (botDuel bot1 bot2)
+(define (botDuel bot1 bot2 [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
+  (printBoard B) ;the full struct of the bot
+  (cond
+    ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter))
+    ((and (equal? color #\W) (win? B #\W #T)) (resultPrinter 1 turnCounter #\W) 0)
+    ((and (equal? color #\B) (win? B #\B #T)) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
+    (else                          ;its sooo bad
+     (display "turn ") (println turnCounter)
+     (cond
+       ((equal? color #\W) (displayln "white's turn"))
+       (else (displayln "black's turn")))
+     (newline)
+     (let ([newB (state-board (pickBotAndMove B bot1 bot2 color))]
+           [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
+       (cond
+         ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
+         (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
+
+(define (pickBotAndMove B bot1 bot2 color [depth 2])
+  (cond
+    ((equal? color #\W) (lazyMinMax depth (SB B #\W) (bot-parameters bot1)))
+    (else (lazyMinMax depth (SB B #\B) (bot-parameters bot2)))))
+
+(define (resultPrinter resultCode turns [color 'none])
+  (display "Game ended in ") (print turns) (displayln " turns")
+  (print 'result:)
+  (cond
+    ((= resultCode 0) (displayln "stalemate") (newline))
+    ((= resultCode 1) (print (invertColor color)) (display " ") (displayln "won") (newline))))
 
 
 ;random shit
@@ -1027,6 +1072,8 @@
                           
 ;startup
 (define start (make-state B1 0 #\W 'none))
+(define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0)) ;defult bot
+(define bot1 (make-bot (list 8 5 1 2 0 0) 0))
 
 ;main
 (define (play)
