@@ -376,6 +376,10 @@
     ((equal? (getColor B Xpos Ypos) color) (cons (list Xpos Ypos) (findAllColor B color (add1 Xpos) Ypos)))
     (else (findAllColor B color (add1 Xpos) Ypos))))
 
+(define (findAllPieces B) ;mostly to make counting easier
+  (list (findAllColor B #\W)
+        (findAllColor B #\B)))
+
 (define (findAllType B type [Xpos 0] [Ypos 0]) ;its soooooooo similar to findAllColor, only 1 word change (easy fix, but not now)
   (cond
     ((= Ypos (length B)) '())
@@ -448,6 +452,22 @@
 ;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
 ;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
 
+ ;draw conditions
+(define (onlyKingsLeft? B color) ;king duel
+  ((= (length (findAllPeices B)) (length #|just to be sure|# (findAllType #\K B)) 2) #T))
+
+(define (3TimesRepetition state) ;3 times the same board
+  (let ([sameBoards (repetitionCheck (state-board state) state)])
+    (cond
+      ((< sameBoards 3) #F)
+      (else #T))))
+
+(define (repetitionCheck B state [counter 0] [limit 4]) ;counting the aperences of the same board 4 generations back
+  (let ([parent (state-parent state)])
+    (cond
+      ((or (= limit 0) (equal? parent 'none)) counter)
+      ((equal? (state-board parent) B) (3TimesRepetition B state (add1 counter) (sub1 limit)))
+      (else (3TimesRepetition B state counter (sub1 limit))))))
 
 ;general use
 (define (attackedKing? B color)
@@ -849,13 +869,11 @@
 (define (crazyMyltiplay L1 L2)
   (map (lambda (L) (map (lambda (x) (* L x)) L1)) L2))
 
-
 (define (CT [L '(1 2 3 4 5 6 7 8 9 10)]) ;CT - Consept Test
   (cond
     ((empty? (rest L)) (list (list (first L) (* 2 (first L)))))
     (else (cons (list (first L) (* 2 (first L)))
                 (CT (rest L))))))
-
 
 (define (randomShit)
 (cons (tstfunction 1 (allMovesToStates start))
