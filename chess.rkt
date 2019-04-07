@@ -14,12 +14,12 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
 
-(define TST '(("WQ" "WK" "--") ;black king can kill the rook, lets just say its not the best idea
+(define TST '(("WQ" "WK" "--")
               ("--" "--" "--")
               ("--" "BK" "BQ")))
 
 
-(define crash (list '("--" "--" "--" "--" "WK" "--" "--" "--") ;crash, all
+(define crash (list '("--" "--" "--" "--" "WK" "--" "--" "--") ;fixed
                     '("WP" "--" "--" "--" "--" "WR" "--" "--")
                     '("--" "--" "--" "WR" "--" "--" "--" "--")
                     '("--" "--" "--" "WB" "--" "BP" "--" "--")
@@ -27,15 +27,6 @@
                     '("--" "--" "--" "--" "--" "--" "--" "--")
                     '("--" "--" "--" "--" "--" "--" "--" "BK")
                     '("--" "--" "--" "--" "--" "--" "--" "--")))
-
-;(-- -- -- -- -- -- -- --) crash too
-;(-- -- -- -- -- -- -- --)
-;(-- -- -- -- -- -- BB --)
-;(-- -- -- WK -- -- BP --)
-;(BK -- -- WH -- -- -- --)
-;(-- -- -- BR -- -- -- BP)
-;(-- -- -- -- -- -- -- --)
-;(-- -- -- -- -- -- -- --)
 
 
 (define b #\B) ;just for ease of input
@@ -559,12 +550,17 @@
 
 (define (allNewBoards B color [pieces (findAllColor B color)]) ;pieces is the locations, given by find all
                                 ;NEEDS A '() cleanup on every call just to make sute it'll work properly
-#| debug
+#| debug  
   (println pieces)
   (printBoard B)
   (println (getTileAt B (first (first pieces)) (second (first pieces))))
   (newline) |#
-  
+
+  (cond
+    ((empty? pieces) '())
+    (else (allNewBoardsMaker B color pieces))))
+
+(define (allNewBoardsMaker B color pieces) ;moved to add input check
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
     (cond
@@ -699,11 +695,17 @@
 
  
 (define (calcScore B color [pieces (findAllColor B color)] [parameters defultValues])
+  (cond
+    ((empty? pieces) (winValue (invertColor color)))
+    (else (noIdeaForAname B color pieces parameters))))
+
+(define (noIdeaForAname B color pieces parameters) ;just adding input check
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
   (cond
     ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY parameters))
     (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY parameters) (calcScore B color (rest pieces) parameters))))))
+
 
 (define (giveValueToPiece B pieceX pieceY [parameters defultValues])
   (let ([type (getType B pieceX pieceY)])
@@ -873,10 +875,19 @@
   (make-bot paremeter 0))
 
 ;kinda bot sex
-;(define (mate bot1 bot2) ;WIP
-;  (let ([parameters1 (bot-parameters bot1)]
-;        [parameters2 (bot-parameters bot2)])
-;    (map (randomizeParameter))))
+(define (mate bot1 bot2)
+  (let ([parameters1 (bot-parameters bot1)]
+        [parameters2 (bot-parameters bot2)])
+    (randomizeTraits parameters1 parameters2)))
+
+(define (randomizeTraits parameters1 parameters2) ;parameters
+  (let ([RD (random 2)])
+  (cond
+    ((empty? parameters1) '())
+    ((= RD 0) (cons (first parameters1) (randomizeTraits (rest parameters1) (rest parameters2))))
+    ((= RD 1) (cons (first parameters2) (randomizeTraits (rest parameters1) (rest parameters2))))
+    (else "ERR - mating failed"))))
+    
 
 
 (define (botDuel bot1 bot2 [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
