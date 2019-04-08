@@ -312,6 +312,15 @@
     ((empty? groups) 'done)
     (else (display "the ") (print (state-score (first (first groups)))) (displayln " group:") (printAllStates (first groups)) (newline) (printAllScoreGroups (rest groups)))))
 
+(define (printBot bot)
+  (println (bot-parameters bot))
+  (println (bot-winCounter bot))
+  (println (bot-fitness bot)))
+
+(define (printAllBots bots)
+  (cond
+    ((empty? bots) 'done)
+    (else (printBot (first bots)) (printAllBots (rest bots)))))
 
 ;gameTypes
 (define (PVP B [color #\W])
@@ -869,7 +878,7 @@
 
 
 ;genetic algorithm
-(define-struct bot (parameters winCounter)) ;e and f unused (for now)
+(define-struct bot (parameters winCounter fitness)) ;e and f unused (for now)
              ;score calculation paremeters in list form
 (define (newBot paremeter)
   (make-bot paremeter 0))
@@ -887,6 +896,13 @@
     ((= RD 0) (cons (first parameters1) (randomizeTraits (rest parameters1) (rest parameters2))))
     ((= RD 1) (cons (first parameters2) (randomizeTraits (rest parameters1) (rest parameters2))))
     (else "ERR - mating failed"))))
+
+;fitness
+(define (updateMateChance botL) ;a list of bots, with scores
+  (let ([maxWins (sub1 (length botL))])
+    (println (length botL))
+    (println maxWins)
+    (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL)))
     
 
 
@@ -1083,8 +1099,11 @@
                           
 ;startup
 (define start (make-state B1 0 #\W 'none))
-(define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0)) ;defult bot
-(define bot1 (make-bot (list 8 5 1 2 0 0) 0))
+(define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0 0)) ;defult bot
+(define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
+
+(define bot2 (make-bot (list 8 5 1 2 0 0) 1 0))
+(define bot3 (make-bot (list 8 5 1 2 0 0) 0 0))
 
 ;main
 (define (play)
