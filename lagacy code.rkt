@@ -221,3 +221,16 @@
 (define (minimax state depth)
   (traceBack (nextGen (list state) depth) (sub1 depth)))
 |#
+
+#| will be adrresed in the scoring sunction
+(define (freeStyleKingBoards B color [kingX (first (findKing B color))] [kingY (second (findKing B color))]) ;will return all the boards from kingFreeStyleMoves
+  (boardsOfAllMoves B (cons (list kingX kingY) (freeStyleKingMoves B color kingX kingY))))
+
+(define (freeStyleKingMoves B color kingX kingY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1) "don't delete me")])
+  (let ([newX (+ kingX (first (first L)))]
+        [newY (+ kingY (second (first L)))])
+    (cond
+      ((empty? (rest L)) '())
+      ((and (legalTile? B newX newY) (not (friendlyTile? B newX newY color))) (cons (list newX newY) (freeStyleKingMoves B color kingX kingY (rest L))))
+      (else (freeStyleKingMoves B color kingX kingY (rest L))))))
+|#
