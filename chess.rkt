@@ -1000,6 +1000,8 @@
 
 (define (drawBoard V)
 
+  (colorTiles V) ;coloring before so its wont delete lines
+
   ;vertical lines (no function... yet (or forever) maybe i'll add someting that takes the size of the board and scales but not now)
   ((draw-line V) (make-posn 10 50) (make-posn 10 458))
   ((draw-line V) (make-posn 61 50) (make-posn 61 458))
@@ -1012,18 +1014,39 @@
   ((draw-line V) (make-posn 418 50) (make-posn 418 458))
 
   ;horizontal lines
-  ((draw-line V) (make-posn 10 50) (make-posn 418 50))
-  ((draw-line V) (make-posn 10 101) (make-posn 418 101))
+  ((draw-line V) (make-posn 10 50) (make-posn 418 50)) ;very interesting... all the lines are gray, i like it, easier to look at
+  ((draw-line V) (make-posn 10 101) (make-posn 418 101)) ;but if you cnage one to black all the next ones change too, like it saves the last color
   ((draw-line V) (make-posn 10 152) (make-posn 418 152))
   ((draw-line V) (make-posn 10 203) (make-posn 418 203))
   ((draw-line V) (make-posn 10 254) (make-posn 418 254))
   ((draw-line V) (make-posn 10 305) (make-posn 418 305))
   ((draw-line V) (make-posn 10 356) (make-posn 418 356))
   ((draw-line V) (make-posn 10 407) (make-posn 418 407))
-  ((draw-line V) (make-posn 10 458) (make-posn 418 458))) ;no tile color for now
+  ((draw-line V) (make-posn 10 458) (make-posn 418 458)))
 
+#| all tiles to color (indexes (inverted...oppssssss shit (hehe...))
+   01,03,05,07
+   10,12,14,16
+   21,23,25,27
+   30,32,34,36
+   41,43,45,47
+   50,52,54,56
+   61,63,65,67
+   70,72,74,76
+|#
 
-;(drawBoard V1)
+(define (colorTiles V [Xpos 1] [Ypos 0] [nextX 0] [nextY 1]) ;the nexts are the coordinates of the first tile in the next line that nedds to be colored
+  (let ([Gx (+ 10 (* Xpos 51))]  ;graphic X
+        [Gy (+ 51 (* Ypos 51))]) ;graphic Ys)
+  (cond
+    ((and (= Xpos 6) (= Ypos 7)) ((draw-solid-rectangle	V) (make-posn Gx Gy) 51 51 "gray"))
+    ((> Xpos 7) (colorTiles V nextX nextY (getNextX nextX) (add1 nextY)))
+    (else ((draw-solid-rectangle V) (make-posn Gx Gy) 51 51 "gray") (colorTiles V (+ 2 Xpos) Ypos nextX nextY)))))
+
+(define (getNextX X)
+  (cond
+    ((= X 1) 0)
+    (else 1)))
 
 
 
@@ -1069,6 +1092,9 @@
 (define (displayMassage V massage)
   ((draw-string V) (make-posn 10 40) massage "Black"))
 
+(define (wipeTile V)
+  ((draw-solid-rectangle V) (make-posn 84 9) 19 11 "white"))
+
 (define (clearMassage V massage)
   ((clear-string V) (make-posn 10 40) massage))
 
@@ -1091,6 +1117,7 @@
                                                                                           (sayAndClear V  "please pick your piece...")
                                                                                           (selectPiece V B playerColor))
       (else (clearMassage V  "click a piece to move: (you can't undo so be careful)")
+            ((draw-string V) (make-posn 10 20) "selected tile:") ((draw-string V) (make-posn 85 20) (number->string (first selectedTile))) ((draw-string V) (make-posn 95 20) (number->string (second selectedTile)))
             (pickTarget selectedTile V B playerColor)))))
 
 
@@ -1102,7 +1129,7 @@
       ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
                                                                                                       (sayAndClear V  "can't go there...")
                                                                                                       (pickTarget movingPiece V B playerColor))
-      (else (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
+      (else (wipeTile V) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
 ;startup
