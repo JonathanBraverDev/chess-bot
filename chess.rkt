@@ -898,11 +898,19 @@
     (else "ERR - mating failed"))))
 
 ;fitness
+(define (breedNextGen botL [bots(updateMateChance botL)])
+  0)
+  
 (define (updateMateChance botL) ;a list of bots, with scores
   (let ([maxWins (sub1 (length botL))])
     (println (length botL))
     (println maxWins)
-    (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL)))
+    (newline)
+    (normalizeFitness (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL))))
+
+(define (normalizeFitness botL)
+  (let ([totalScore (foldr (lambda (score1 score2) (+ score1 score2)) 0 (map bot-fitness botL))])
+    (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
     
 
 
@@ -1100,10 +1108,11 @@
 ;startup
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0 0)) ;defult bot
-(define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
 
+(define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
 (define bot2 (make-bot (list 8 5 1 2 0 0) 1 0))
-(define bot3 (make-bot (list 8 5 1 2 0 0) 0 0))
+(define bot3 (make-bot (list 8 5 1 2 0 0) 2 0))
+(define bot4 (make-bot (list 8 5 1 2 0 0) 1 0))
 
 ;main
 (define (play)
