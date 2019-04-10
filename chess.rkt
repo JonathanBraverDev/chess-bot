@@ -341,7 +341,7 @@
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-(define (PVEdemo [B B1] [color #\W] [human #T] [V V1]) ;its a completly random bot
+(define (PVEdemo [depth 2] [B B1] [color #\W] [human #T] [V V1]) ;its a completly random bot
   (fillGraphicBoard V B)
   (cond
     ((win? B color #T) (print color) (winMassage V color))
@@ -352,10 +352,10 @@
      (cond
        (human (let ([newPlayerB (selectPiece V B color)])
                 (clearGraphicBoard V B)
-                (PVEdemo newPlayerB (invertColor color) (invertPlayer human))))
-       (else (let ([newB (state-board (lazyMinMax 2 (SB B color)))])
+                (PVEdemo depth newPlayerB (invertColor color) (invertPlayer human))))
+       (else (let ([newB (state-board (lazyMinMax depth (SB B color)))])
                (clearGraphicBoard V B)
-               (PVEdemo newB (invertColor color) (invertPlayer human))))))))
+               (PVEdemo depth newB (invertColor color) (invertPlayer human))))))))
 
 (define (EVEbullshit [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
@@ -1106,6 +1106,10 @@
 
                           
 ;startup
+(define (play [depth 2])
+  (drawBoard V1)
+  (PVEdemo depth))
+
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0 0)) ;defult bot
 
@@ -1114,8 +1118,6 @@
 (define bot3 (make-bot (list 8 5 1 2 0 0) 2 0))
 (define bot4 (make-bot (list 8 5 1 2 0 0) 1 0))
 
-;main
-(define (play)
-  (drawBoard V1)
-  (PVEdemo))
+
+(play 2)
          
