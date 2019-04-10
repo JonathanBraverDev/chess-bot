@@ -1125,10 +1125,10 @@
   (displayMassage V "click the destination: (or on the piece you selected to pick again)")
   (let ([selectedTile (clickToboardPos V)])
     (cond
-      ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (sayAndClear V  "back to selection...") (selectPiece V B playerColor)) ;ok... here it is
+      ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (sayAndClear V  "back to selection...") (wipeTile V) (selectPiece V B playerColor)) ;ok... here it is (back to selection)
       ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
-                                                                                                      (sayAndClear V  "can't go there...")
-                                                                                                      (pickTarget movingPiece V B playerColor))
+                                                                                                    (sayAndClear V  "can't go there...")
+                                                                                                    (pickTarget movingPiece V B playerColor))
       (else (wipeTile V) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
@@ -1146,5 +1146,5 @@
 (define bot4 (make-bot (list 8 5 1 2 0 0) 1 0))
 
 
-(play 2)
+(play 1)
          
