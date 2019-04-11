@@ -19,14 +19,23 @@
               ("--" "BK" "BQ")))
 
 
-(define crash (list '("--" "--" "--" "--" "WK" "--" "--" "--") ;fixed
-                    '("WP" "--" "--" "--" "--" "WR" "--" "--")
-                    '("--" "--" "--" "WR" "--" "--" "--" "--")
-                    '("--" "--" "--" "WB" "--" "BP" "--" "--")
-                    '("--" "--" "--" "WQ" "--" "--" "--" "--")
-                    '("--" "--" "--" "--" "--" "--" "--" "--")
-                    '("--" "--" "--" "--" "--" "--" "--" "BK")
-                    '("--" "--" "--" "--" "--" "--" "--" "--")))
+(define crash (list (WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
+                    (WP -- BH WP WB WP WP WP)
+                    (-- WP -- -- WP WH -- --)
+                    (-- -- WP -- WQ WH BH --)
+                    (-- -- BQ -- -- -- -- --)
+                    (BP -- -- BP BP -- -- --)
+                    (-- BP BP BB BB BP -- BP)
+                    (-- -- -- BR BK -- -- WB)))
+
+(define crash2 (list (-- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
+                     (WP -- BH WP WB WP WP WP)
+                     (-- WP -- -- WP WH -- --)
+                     (-- -- WP -- WQ WH BH --)
+                     (-- -- BQ -- -- -- -- --)
+                     (BP -- -- BP BP -- -- --)
+                     (-- BP BP BB BB BP -- BP)
+                     (-- -- -- BR BK -- -- WB)))
 
 
 (define b #\B) ;just for ease of input
@@ -911,10 +920,17 @@
 (define (normalizeFitness botL)
   (let ([totalScore (foldr (lambda (score1 score2) (+ score1 score2)) 0 (map bot-fitness botL))])
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
-    
 
 
-(define (botDuel bot1 bot2 [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
+(define (match bot1 bot2 [depth 2])
+  (let ([winner1 (botDuel bot1 bot2 depth)]
+        [winner2 (resultInverter (botDuel bot1 bot2 depth))])
+    (cond ;yeah, its dumb... shashhhhhh
+      ((= winner1 winner2 0) '(2 0))
+      ((= winner1 winner2) '(0 2)) ;it wont get here with a 0 ;)
+      (else '(1 1)))))
+
+(define (botDuel bot1 bot2 [depth 2] [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
   (printBoard B) ;the full struct of the bot
   (cond
     ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter))
@@ -926,11 +942,11 @@
        ((equal? color #\W) (displayln "white's turn"))
        (else (displayln "black's turn")))
      (newline)
-     (let ([newB (state-board (pickBotAndMove B bot1 bot2 color))]
+     (let ([newB (state-board (pickBotAndMove B bot1 bot2 color depth))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
-         ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
-         (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
+         ((= lastPieceCount pieceCount) (botDuel bot1 bot2 depth newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
+         (else (botDuel bot1 bot2 depth newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
 
 (define (pickBotAndMove B bot1 bot2 color [depth 2])
   (cond
@@ -943,6 +959,11 @@
   (cond
     ((= resultCode 0) (displayln "stalemate") (newline))
     ((= resultCode 1) (print (invertColor color)) (display " ") (displayln "won") (newline))))
+
+(define (resultInverter result)
+  (cond
+    ((= result 0) 1)
+    (else 0)))
 
 
 ;random shit
@@ -1146,5 +1167,5 @@
 (define bot4 (make-bot (list 8 5 1 2 0 0) 1 0))
 
 
-(play 1)
+;(play 1)
          
