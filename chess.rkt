@@ -19,23 +19,23 @@
               ("--" "BK" "BQ")))
 
 
-(define crash (list (WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
-                    (WP -- BH WP WB WP WP WP)
-                    (-- WP -- -- WP WH -- --)
-                    (-- -- WP -- WQ WH BH --)
-                    (-- -- BQ -- -- -- -- --)
-                    (BP -- -- BP BP -- -- --)
-                    (-- BP BP BB BB BP -- BP)
-                    (-- -- -- BR BK -- -- WB)))
+(define crash (list '(WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
+                    '(WP -- BH WP WB WP WP WP)
+                    '(-- WP -- -- WP WH -- --)
+                    '(-- -- WP -- WQ WH BH --)
+                    '(-- -- BQ -- -- -- -- --)
+                    '(BP -- -- BP BP -- -- --)
+                    '(-- BP BP BB BB BP -- BP)
+                    '(-- -- -- BR BK -- -- WB)))
 
-(define crash2 (list (-- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
-                     (WP -- BH WP WB WP WP WP)
-                     (-- WP -- -- WP WH -- --)
-                     (-- -- WP -- WQ WH BH --)
-                     (-- -- BQ -- -- -- -- --)
-                     (BP -- -- BP BP -- -- --)
-                     (-- BP BP BB BB BP -- BP)
-                     (-- -- -- BR BK -- -- WB)))
+(define crash2 (list '(-- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
+                     '(WP -- BH WP WB WP WP WP)
+                     '(-- WP -- -- WP WH -- --)
+                     '(-- -- WP -- WQ WH BH --)
+                     '(-- -- BQ -- -- -- -- --)
+                     '(BP -- -- BP BP -- -- --)
+                     '(-- BP BP BB BB BP -- BP)
+                     '(-- -- -- BR BK -- -- WB)))
 
 
 (define b #\B) ;just for ease of input
@@ -617,19 +617,6 @@
     (else '())))
 
 
-#| will be adrresed in the scoring sunction
-(define (freeStyleKingBoards B color [kingX (first (findKing B color))] [kingY (second (findKing B color))]) ;will return all the boards from kingFreeStyleMoves
-  (boardsOfAllMoves B (cons (list kingX kingY) (freeStyleKingMoves B color kingX kingY))))
-
-(define (freeStyleKingMoves B color kingX kingY [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1) "don't delete me")])
-  (let ([newX (+ kingX (first (first L)))]
-        [newY (+ kingY (second (first L)))])
-    (cond
-      ((empty? (rest L)) '())
-      ((and (legalTile? B newX newY) (not (friendlyTile? B newX newY color))) (cons (list newX newY) (freeStyleKingMoves B color kingX kingY (rest L))))
-      (else (freeStyleKingMoves B color kingX kingY (rest L))))))
-|#
-
 
 (define (checkDummyOnAllBoards L [ATKcounter 0]) ;L is all the enemy's moves
   (cond
@@ -811,32 +798,29 @@
     ((empty? (rest L)) (min\max (first L))) ;it means there's only one group so just minimax the rest
     (else (lazyMinMax depth state parameters (group-by (lambda (state) (state-parent state)) (map (lambda (group) (updateParent group)) L))))))
 
-#| abandoned attempt
-(define (prossesGroup depth state) ;WIP - will prosses one branch at a time, not all atonvce with a map function
-  (cond
-    ((= depth 1) (min\max (calcScoreForList (allMovesToStates state)))) ;returns the same state but with the best child's score
-    (else 'WIP)))
-|#
+
 
 (define (runTST depth [state start])
   (cond
     ((= depth 0) state)
-    (else (tstfunction depth (allMovesToStates state)))))
+    (else (traceBack (first (tstfunction depth (allMovesToStates state))) (sub1 depth)))))
   
                          ;nextGen shuld help....
-(define (tstfunction depth open nextGen [state (first open)]) ;open is (allMovesToStates state)
+(define (tstfunction depth open #| nextGen |# [state (first open)]) ;open is (allMovesToStates state)
   (print (length open)) (display " ") (println depth)
   (cond
-    ((= depth 1) (min\max (calcScoreForList open)))
+    ((= depth 1) (list (min\max (calcScoreForList open)))) ;to make it always return a list with one state
     ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state)))) ;the first line is more likly so... preformance boost
-    (else (list (bestOftwo (flatten (cons (tstfunction (sub1 depth) (allMovesToStates state)) ;returns the best states
+    (else (list (bestOftwo (flatten (cons (first (tstfunction (sub1 depth) (allMovesToStates state))) ;returns the best states
                                           (tstfunction depth (rest open)))))))))
 
 (define (bestOftwo L)
   (println L)
+  (printAllStates L)
   (let ([color (state-color (first L))]) ;its the next color, so the player making the move had it inverted
     (let ([sortedL (sort L (lambda (a b) (> (state-score a) (state-score b))))])
     (cond
+      ((= (state-score (first sortedL)) (state-score (second sortedL))) (randomIndexFrom sortedL)) ;making it more fun ;)
       ((equal? color #\B) (second sortedL))
       (else (first L))))))
 
@@ -925,15 +909,20 @@
 (define (match bot1 bot2 [depth 2])
   (let ([winner1 (botDuel bot1 bot2 depth)]
         [winner2 (resultInverter (botDuel bot1 bot2 depth))])
-    (cond ;yeah, its dumb... shashhhhhh
-      ((= winner1 winner2 0) '(2 0))
-      ((= winner1 winner2) '(0 2)) ;it wont get here with a 0 ;)
-      (else '(1 1)))))
+      (list (matchResultforBot winner1 winner2 0) ;still with input for easy of debug
+            (matchResultforBot winner1 winner2 1))))
+
+(define (matchResultforBot winner1 winner2 [round 0]) ;round is 0 if the bot palyed white in th first game and black otherwise
+  (display "wins: ") (print winner1) (println winner2)
+  (cond
+    ((= winner1 winner2 round) 2) 
+    ((or (= round winner1) (= round winner2)) 1) 
+    (else 0))) ;the bot won no games - ties or not... dosent matter
 
 (define (botDuel bot1 bot2 [depth 2] [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
   (printBoard B) ;the full struct of the bot
   (cond
-    ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter))
+    ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter) -1) ;tie code
     ((and (equal? color #\W) (win? B #\W #T)) (resultPrinter 1 turnCounter #\W) 0)
     ((and (equal? color #\B) (win? B #\B #T)) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
     (else                          ;its sooo bad
@@ -955,7 +944,7 @@
 
 (define (resultPrinter resultCode turns [color 'none])
   (display "Game ended in ") (print turns) (displayln " turns")
-  (print 'result:)
+  (display "result: ")
   (cond
     ((= resultCode 0) (displayln "stalemate") (newline))
     ((= resultCode 1) (print (invertColor color)) (display " ") (displayln "won") (newline))))
@@ -1077,16 +1066,6 @@
 ;then the start of the lines (10 and 61)
 ;and finally the offset by the nember of tiles (0 - 7 workes perfectly)
 
-
-;(drawLetter V1 (boardPosToGraphicsPos 0 0) "F")
-;(drawLetter V1 (boardPosToGraphicsPos 3 2) "W")
-;(drawLetter V1 (boardPosToGraphicsPos 6 5) "V")
-;(drawLetter V1 (boardPosToGraphicsPos 0 1) "T")
-
-
-;(define V2 (open-viewport "V2" 51 51))
-
-;(drawLetter V2 (make-posn 20 (+ 20 11)) "A")
 
 (define (clearGraphicBoard V B)
   (for-each (lambda (L) (deleteLetter V (boardPosToGraphicsPos (first L) (second L)) (string (getType B (first L) (second L)))))
