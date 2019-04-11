@@ -366,7 +366,7 @@
                (clearGraphicBoard V B)
                (PVEdemo depth newB (invertColor color) (invertPlayer human))))))))
 
-(define (EVEbullshit [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
+(define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
@@ -381,8 +381,8 @@
      (let ([newB (state-board (lazyMinMax 2 (SB B color)))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
-         ((= lastPieceCount pieceCount) (EVEbullshit newB (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
-         (else (EVEbullshit newB (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
+         ((= lastPieceCount pieceCount) (EVEbullshit newB depth (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
+         (else (EVEbullshit newB depth (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
    
 
 ;board operations
@@ -656,10 +656,10 @@
     ((attackedKing? B color) (displayln "the king is under attack"))
     (else (displayln "all moves are blocked"))))
 
-(define (test [B B1] [times 10] [counter 0])
+(define (test [B B1] [depth 2] [times 10] [counter 0])
   (cond
     ((= counter times) (newline) (display "no crash"))
-    (else (display "game No ") (println (add1 counter)) (EVEbullshit B) (test B times (add1 counter)))))
+    (else (display "game No ") (println (add1 counter)) (EVEbullshit B depth) (test B times (add1 counter)))))
 
 
 ;scoring
