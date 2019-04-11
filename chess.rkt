@@ -915,7 +915,7 @@
 (define (matchResultforBot winner1 winner2 [round 0]) ;round is 0 if the bot palyed white in th first game and black otherwise
   (display "wins: ") (print winner1) (println winner2)
   (cond
-    ((= winner1 winner2 round) 2) 
+    ((= winner1 winner2 round) 2)
     ((or (= round winner1) (= round winner2)) 1) 
     (else 0))) ;the bot won no games - ties or not... dosent matter
 
@@ -952,7 +952,8 @@
 (define (resultInverter result)
   (cond
     ((= result 0) 1)
-    (else 0)))
+    ((= result 1) 0)
+    (else -1)))
 
 
 ;random shit
