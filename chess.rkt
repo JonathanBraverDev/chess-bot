@@ -378,7 +378,7 @@
        ((equal? color #\W) (displayln "white's turn"))
        (else (displayln "black's turn")))
      (newline)
-     (let ([newB (state-board (lazyMinMax 2 (SB B color)))]
+     (let ([newB (state-board (lazyMinMax depth (SB B color)))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
          ((= lastPieceCount pieceCount) (EVEbullshit newB depth (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
