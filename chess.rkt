@@ -382,6 +382,7 @@
 (define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
   (println (scoreForBoard B color))
+  (println (attackedKing? B color))
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
@@ -673,7 +674,7 @@
 (define (test [B B1] [depth 2] [times 10] [counter 0])
   (cond
     ((= counter times) (newline) (display "no crash"))
-    (else (display "game No ") (println (add1 counter)) (EVEbullshit B depth) (test B times (add1 counter)))))
+    (else (display "game No ") (println (add1 counter)) (EVEbullshit B depth) (test B depth times (add1 counter)))))
 
 
 ;scoring
@@ -690,17 +691,25 @@
 (define hillsBounus 1.1)
 (define vallyBounus 1)
 (define swampBounus 0.9)
+(define kingBase 1.2)
+(define checkBonus 2)
 ;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
 ;               'enamy cheched' a set bounus on attaking the king
 
-(define defultValues (list mountaintopBounus hillsBounus vallyBounus swampBounus #|more values|#))
+(define defultValues (list mountaintopBounus hillsBounus vallyBounus swampBounus kingBase checkBonus #|more values|#))
 ;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
 (define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
-  (let ([winResult (winCheck B color start)])
+  (let ([winResult (winCheck B color start)]
+        [attackBounus (checkCheck B color parameters)])
     (cond
       (winResult winResult)
-      (else (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters)))))))
+      (else (+ attackBounus (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters))))))))
+
+(define (checkCheck B color parameters)
+  (cond
+    ((attackedKing? B (invertColor color)) (sixth parameters))
+    (else 0)))
   
 (define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
   (cond
@@ -729,20 +738,20 @@
 (define (giveValueToPiece B pieceX pieceY [parameters defultValues])
   (let ([type (getType B pieceX pieceY)])
     (cond
-      ((equal? type #\K) 0) ;ummm ikd waht to do... so... yea
-      ((isInHilltop? (list pieceX pieceY)) (* (baseValue type) (first parameters)))
-      ((isInHills? pieceX pieceY) (* (baseValue type) (second parameters)))
-      ((isInVally? pieceX pieceY) (* (baseValue type) (third parameters)))
-      (else (* (baseValue type) (fourth parameters)))))) ;ummm everyting else is in the swamp
+;      ((equal? type #\K) (fifth parameters)) ;trying someting... no idea what's better
+      ((isInHilltop? (list pieceX pieceY)) (* (baseValue type parameters) (first parameters)))
+      ((isInHills? pieceX pieceY) (* (baseValue type parameters) (second parameters)))
+      ((isInVally? pieceX pieceY) (* (baseValue type parameters) (third parameters)))
+      (else (* (baseValue type parameters) (fourth parameters)))))) ;ummm everyting else is in the swamp
 
-(define (baseValue type)
+(define (baseValue type parameters)
   (cond
     ((equal? type #\P) 1)
     ((equal? type #\B) 3)
     ((equal? type #\H) 3)
     ((equal? type #\R) 5)
     ((equal? type #\Q) 9)
-    (else 0))) ;king will go here (theoreticly... that function is never run on him)
+    (else (fifth parameters)))) ;king will go here (theoreticly... that function is never run on him)
 
 (define (isInHilltop? XYpos [L (list '(3 3) '(3 4) '(4 3) '(4 4))])
   (cond
