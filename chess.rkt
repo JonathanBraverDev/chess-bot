@@ -18,24 +18,37 @@
               ("--" "--" "--")
               ("--" "BK" "BQ")))
 
+(define WR "WR")
+(define BR "BR")
+(define WP "WP")
+(define BP "BP")
+(define WQ "WQ")
+(define BQ "BQ")
+(define WK "WK")
+(define BK "BK")
+(define WH "WH")
+(define BH "BH")
+(define WB "WB")
+(define BB "BB")
+(define -- "--")
+  
+(define crash (list (list WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
+                    (list WP -- BH WP WB WP WP WP)
+                    (list -- WP -- -- WP WH -- --)
+                    (list -- -- WP -- WQ WH BH --)
+                    (list -- -- BQ -- -- -- -- --)
+                    (list BP -- -- BP BP -- -- --)
+                    (list -- BP BP BB BB BP -- BP)
+                    (list -- -- -- BR BK -- -- WB)))
 
-(define crash (list '(WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
-                    '(WP -- BH WP WB WP WP WP)
-                    '(-- WP -- -- WP WH -- --)
-                    '(-- -- WP -- WQ WH BH --)
-                    '(-- -- BQ -- -- -- -- --)
-                    '(BP -- -- BP BP -- -- --)
-                    '(-- BP BP BB BB BP -- BP)
-                    '(-- -- -- BR BK -- -- WB)))
-
-(define crash2 (list '(-- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
-                     '(WP -- BH WP WB WP WP WP)
-                     '(-- WP -- -- WP WH -- --)
-                     '(-- -- WP -- WQ WH BH --)
-                     '(-- -- BQ -- -- -- -- --)
-                     '(BP -- -- BP BP -- -- --)
-                     '(-- BP BP BB BB BP -- BP)
-                     '(-- -- -- BR BK -- -- WB)))
+(define crash2 (list(list -- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
+                    (list WP -- BH WP WB WP WP WP)
+                    (list -- WP -- -- WP WH -- --)
+                    (list -- -- WP -- WQ WH BH --)
+                    (list -- -- BQ -- -- -- -- --)
+                    (list BP -- -- BP BP -- -- --)
+                    (list -- BP BP BB BB BP -- BP)
+                    (list -- -- -- BR BK -- -- WB)))
 
 
 (define b #\B) ;just for ease of input
@@ -368,6 +381,7 @@
 
 (define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
+  (println (scoreForBoard B color))
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
