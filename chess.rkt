@@ -33,14 +33,14 @@
 (define BP "BP")
 (define -- "--")
   
-(define bug (list (list -- -- -- -- -- -- -- --)
-                    (list -- -- -- -- -- -- WK --)
-                    (list -- BP -- -- -- BP -- --)
-                    (list -- -- -- BB BB -- -- --)
-                    (list BP -- -- BP BR -- -- BP)
-                    (list -- BR -- -- -- BK -- --)
-                    (list -- -- -- -- -- -- -- --)
-                    (list -- -- -- -- -- -- -- --)))
+(define bug (list (list -- -- -- -- -- -- -- --) ;fixed
+                  (list -- -- -- -- -- -- -- --)
+                  (list -- BP -- -- -- BP -- --)
+                  (list -- -- -- BB BB -- -- --)
+                  (list BP -- -- BP BR -- -- BP)
+                  (list -- BR -- -- -- BK -- --)
+                  (list -- -- -- -- -- -- -- --)
+                  (list -- -- -- -- -- -- -- WK)))
 
 
 (define b #\B) ;just for ease of input
@@ -679,25 +679,25 @@
 ;Queen - 9
 ;King - game (JK... but realy, its game over if you lose him so its infinity)
 
-;bounuses are apresent of the piece value (so a pawn wont be worth more that a rook)
-(define mountaintopBounus 1.25) 
-(define hillsBounus 1.1)
-(define vallyBounus 1)
-(define swampBounus 0.9)
+;bonuses are apresent of the piece value (so a pawn wont be worth more that a rook)
+(define mountaintopBonus 1.15) 
+(define hillsBonus 1.1)
+(define vallyBonus 1)
+(define swampBonus 0.9)
 (define kingBase 0)
-(define checkBonus 4)
+(define checkBonus 3)
 ;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
-;               'enamy cheched' a set bounus on attaking the king
+;               'enamy cheched' a set bonus on attaking the king
 
-(define defultValues (list mountaintopBounus hillsBounus vallyBounus swampBounus kingBase checkBonus #|more values|#))
+(define defultValues (list mountaintopBonus hillsBonus vallyBonus swampBonus kingBase checkBonus #|more values|#))
 ;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
 (define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
-      (else (let ([attackBounus (checkCheck B color parameters)])
-              (+ attackBounus (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters)))))))))
+      (else (let ([attackBonus (checkCheck B color parameters)])
+              (+ attackBonus (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters)))))))))
 
 (define (checkCheck B color parameters)
   (cond
@@ -924,7 +924,7 @@
 
 (define (match bot1 bot2 [depth 2])
   (let ([winner1 (botDuel bot1 bot2 depth)]
-        [winner2 (resultInverter (botDuel bot1 bot2 depth))])
+        [winner2 (resultInverter (botDuel bot2 bot1 depth))])
       (list (matchResultforBot winner1 winner2 0) ;still with input for easy of debug
             (matchResultforBot winner1 winner2 1))))
 
@@ -962,7 +962,7 @@
   (display "result: ")
   (cond
     ((= resultCode 0) (displayln "stalemate") (newline))
-    ((= resultCode 1) (print (invertColor color)) (display " ") (displayln "won") (newline))))
+    ((= resultCode 1) (print color) (display " ") (displayln "won") (newline))))
 
 (define (resultInverter result)
   (cond
@@ -1154,10 +1154,10 @@
   (PVEdemo depth))
 
 (define start (make-state B1 0 #\W 'none))
-(define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0 0)) ;defult bot
+(define DB (make-bot defultValues 0 0)) ;defult bot
 
 (define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
-(define bot2 (make-bot (list -5 2 7 -12 0 0) 1 0))
+(define bot2 (make-bot (list -5 2 7 -12 0 0) 1 0)) ;I'm surprised... but its actually beating my bot
 
 
 
