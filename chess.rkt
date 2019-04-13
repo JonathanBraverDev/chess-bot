@@ -889,14 +889,27 @@
 ;genetic algorithm
 (define-struct bot (parameters winCounter fitness)) ;e and f unused (for now)
              ;score calculation paremeters in list form
+
 (define (newBot paremeter)
   (make-bot paremeter 0))
+
+(define (randomGen size)
+  (cond
+    ((= size 0) '())
+    (else (cons (newRandomBot) (randomGen (sub1 size))))))
+
+(define (newRandomBot)
+  (make-bot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10)) 0 0)) ;just... random but it a range that makes sence
+
+(define (mutate bot)
+  (let ([mutationIndex (random (length (bot-parameters bot)))])
+    (make-bot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 5 15) 10)))) (drop (bot-parameters bot) (add1 mutationIndex))) 0 0)))
 
 ;kinda bot sex
 (define (mate bot1 bot2)
   (let ([parameters1 (bot-parameters bot1)]
         [parameters2 (bot-parameters bot2)])
-    (randomizeTraits parameters1 parameters2)))
+    (make-bot (randomizeTraits parameters1 parameters2) 0 0)))
 
 (define (randomizeTraits parameters1 parameters2) ;parameters
   (let ([RD (random 2)])
@@ -912,16 +925,16 @@
   
 (define (updateMateChance botL) ;a list of bots, with scores
   (let ([maxWins (sub1 (length botL))])
-    (println (length botL))
-    (println maxWins)
-    (newline)
+    ;(println (length botL))
+    ;(println maxWins)
+    ;(newline)
     (normalizeFitness (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL))))
 
 (define (normalizeFitness botL)
   (let ([totalScore (foldr (lambda (score1 score2) (+ score1 score2)) 0 (map bot-fitness botL))])
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
 
-
+;bot duels
 (define (match bot1 bot2 [depth 2])
   (let ([winner1 (botDuel bot1 bot2 depth)]
         [winner2 (resultInverter (botDuel bot2 bot1 depth))])
@@ -1004,6 +1017,7 @@
                    (list (tstfunction 1 (drop (allMovesToStates start) 19))
                    )))))))))))))))))))))
 
+
 ;graphics
 (open-graphics)
 (define V1 (open-viewport "V1" 428 468))
@@ -1014,18 +1028,9 @@
 (define (deleteLetter V posn letter)
   ((clear-string V) posn letter))
 
-(define (demoBoard V [letter "A"] [times 8] [lastPos 0])
-  (cond
-    ((= times 0) 'done)
-    (else (drawLetter V (make-posn (+ lastPos 50) 50) letter "black")
-          (demoBoard V letter (sub1 times) (+ 50 lastPos)))))
-
-
-;(demoBoard V1)
-;(demoBoard V1 "D")
 
 (define (drawBoard V)
-
+  
   (colorTiles V) ;coloring before so its wont delete lines
 
   ;vertical lines (no function... yet (or forever) maybe i'll add someting that takes the size of the board and scales but not now)
@@ -1038,7 +1043,7 @@
   ((draw-line V) (make-posn 316 50) (make-posn 316 458))
   ((draw-line V) (make-posn 367 50) (make-posn 367 458))
   ((draw-line V) (make-posn 418 50) (make-posn 418 458))
-
+  
   ;horizontal lines
   ((draw-line V) (make-posn 10 50) (make-posn 418 50)) ;very interesting... all the lines are gray, i like it, easier to look at
   ((draw-line V) (make-posn 10 101) (make-posn 418 101)) ;but if you cnage one to black all the next ones change too, like it saves the last color
@@ -1073,7 +1078,6 @@
   (cond
     ((= X 1) 0)
     (else 1)))
-
 
 
 (define (boardPosToGraphicsPos Xpos Ypos)
@@ -1157,7 +1161,7 @@
 (define DB (make-bot defultValues 0 0)) ;defult bot
 
 (define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
-(define bot2 (make-bot (list -5 2 7 -12 0 0) 1 0)) ;I'm surprised... but its actually beating my bot
+(define bot2 (make-bot (list -5 2 7 -12 0 0) 2 0)) ;I'm surprised... but its actually beating my bot 
 
 
 
