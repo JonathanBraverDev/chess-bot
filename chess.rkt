@@ -18,37 +18,29 @@
               ("--" "--" "--")
               ("--" "BK" "BQ")))
 
-(define WR "WR")
-(define BR "BR")
-(define WP "WP")
-(define BP "BP")
-(define WQ "WQ")
-(define BQ "BQ")
+
 (define WK "WK")
 (define BK "BK")
+(define WQ "WQ")
+(define BQ "BQ")
+(define WR "WR")
+(define BR "BR")
 (define WH "WH")
 (define BH "BH")
 (define WB "WB")
 (define BB "BB")
+(define WP "WP")
+(define BP "BP")
 (define -- "--")
   
-(define crash (list (list WR -- -- -- WK -- -- WR) ;suspisius win tetection for W, start of black's turn
-                    (list WP -- BH WP WB WP WP WP)
-                    (list -- WP -- -- WP WH -- --)
-                    (list -- -- WP -- WQ WH BH --)
-                    (list -- -- BQ -- -- -- -- --)
-                    (list BP -- -- BP BP -- -- --)
-                    (list -- BP BP BB BB BP -- BP)
-                    (list -- -- -- BR BK -- -- WB)))
-
-(define crash2 (list(list -- WR -- -- WK -- -- WR) ;same here, W won by the bot dual game, look weird
-                    (list WP -- BH WP WB WP WP WP)
-                    (list -- WP -- -- WP WH -- --)
-                    (list -- -- WP -- WQ WH BH --)
-                    (list -- -- BQ -- -- -- -- --)
-                    (list BP -- -- BP BP -- -- --)
-                    (list -- BP BP BB BB BP -- BP)
-                    (list -- -- -- BR BK -- -- WB)))
+(define bug (list (list -- -- -- -- -- -- -- --)
+                    (list -- -- -- -- -- -- WK --)
+                    (list -- BP -- -- -- BP -- --)
+                    (list -- -- -- BB BB -- -- --)
+                    (list BP -- -- BP BR -- -- BP)
+                    (list -- BR -- -- -- BK -- --)
+                    (list -- -- -- -- -- -- -- --)
+                    (list -- -- -- -- -- -- -- --)))
 
 
 (define b #\B) ;just for ease of input
@@ -382,12 +374,12 @@
 (define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
   (println (scoreForBoard B color))
-  (println (attackedKing? B color))
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
-    ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
+    ((win? B color #T) (print (invertColor color)) (display " ") (displayln "won") (newline))
     ((empty? (filterChecked B color)) (displayln "stalemate") (newline))
     (else                          ;its sooo bad
+     (println (attackedKing? B color)) ;printing check
      (display "turn ") (println turnCounter)
      (cond
        ((equal? color #\W) (displayln "white's turn"))
@@ -482,6 +474,7 @@
     (cond ;start is true of falce (by defult) based on the mite of the ceck, before or after the side's move
       ((empty? (findKing B enemyColor)) #T) ; the king is already dead
       ((and start (attackedKing? B enemyColor)) #T) ; the king is under attack in the beggining of the turn (so he'll BE killed)
+      ((= (length (findAllColor B enemyColor)) 1) #T) ;i'm tired from stalmates, the better killer will win
       (else #F))))
 
 ;abit tooooo agressive about putting games down
@@ -691,8 +684,8 @@
 (define hillsBounus 1.1)
 (define vallyBounus 1)
 (define swampBounus 0.9)
-(define kingBase 1.2)
-(define checkBonus 2)
+(define kingBase 0)
+(define checkBonus 4)
 ;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
 ;               'enamy cheched' a set bounus on attaking the king
 
@@ -700,11 +693,11 @@
 ;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
 (define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
-  (let ([winResult (winCheck B color start)]
-        [attackBounus (checkCheck B color parameters)])
+  (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
-      (else (+ attackBounus (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters))))))))
+      (else (let ([attackBounus (checkCheck B color parameters)])
+              (+ attackBounus (round* (- (calcScore B #\W (findAllColor B #\W) parameters) (calcScore B #\B (findAllColor B #\B) parameters)))))))))
 
 (define (checkCheck B color parameters)
   (cond
@@ -936,7 +929,6 @@
             (matchResultforBot winner1 winner2 1))))
 
 (define (matchResultforBot winner1 winner2 [round 0]) ;round is 0 if the bot palyed white in th first game and black otherwise
-  (display "wins: ") (print winner1) (println winner2)
   (cond
     ((= winner1 winner2 round) 2)
     ((or (= round winner1) (= round winner2)) 1) 
@@ -946,8 +938,8 @@
   (printBoard B) ;the full struct of the bot
   (cond
     ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter) -1) ;tie code
-    ((and (equal? color #\W) (win? B #\W #T)) (resultPrinter 1 turnCounter #\W) 0)
-    ((and (equal? color #\B) (win? B #\B #T)) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
+    ((win? B #\W) (resultPrinter 1 turnCounter #\W) 0)
+    ((win? B #\B) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
     (else                          ;its sooo bad
      (display "turn ") (println turnCounter)
      (cond
@@ -1165,9 +1157,8 @@
 (define DB (make-bot (list 1.25 1.1 1 0.9 0 0) 0 0)) ;defult bot
 
 (define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
-(define bot2 (make-bot (list 8 5 1 2 0 0) 1 0))
-(define bot3 (make-bot (list 8 5 1 2 0 0) 2 0))
-(define bot4 (make-bot (list 8 5 1 2 0 0) 1 0))
+(define bot2 (make-bot (list -5 2 7 -12 0 0) 1 0))
+
 
 
 ;(play 1)
