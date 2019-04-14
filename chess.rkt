@@ -890,8 +890,34 @@
 (define-struct bot (parameters winCounter fitness)) ;e and f unused (for now)
              ;score calculation paremeters in list form
 
-(define (newBot paremeter)
-  (make-bot paremeter 0))
+(define (newBot paremeter) ;to avoid all the zeros needed to make a proper bot
+  (make-bot paremeter 0 0))
+
+(define (resetBot bot) ;cleans the record of the bot (in other words it makes anew bot with the same parameters but wothout the winCouner of fitness)
+  (newBot (bot-parameters bot)))
+
+(define (breedNextGen botL [bots (updateMateChance botL)])
+  (cond
+    ((empty? bots) '())
+    ((onlyOneWon? bots) (list (resetBot (list-ref bots (indexOfFitness bots 1))) (randomGen (- (length bots) 2)))) ;so the next gen will actually be usefull.....
+    (else (cons (mate (pickParent bots) (pickParent bots)) '()))))
+
+(define (indexOfFitness botL value) ;returns the index of the first bot with the given fitness
+  (cond
+    ((= (first botL) value) 0) ;there is always abot that fits (internal function)
+    (else (add1 (indexOfFitness (rest botL) value)))))
+
+(define (pickParent botL [sum 0] [RND (random)]) ;needs a 'fitted' (with fitness) list of bots
+  (let ([newSum (+ sum (bot-fitness (first botL)))])
+    (cond
+      ((or (> newSum RND) (= newSum RND)) (first botL))
+      (else (pickParent (rest botL) newSum RND)))))
+
+(define (onlyOneWon? botL)
+  (cond
+    ((empty? botL) #F)
+    ((= (bot-fitness (first botL)) 1) #T)
+    (else (onlyOneWon? (rest botL)))))
 
 (define (randomGen size)
   (cond
@@ -899,11 +925,11 @@
     (else (cons (newRandomBot) (randomGen (sub1 size))))))
 
 (define (newRandomBot)
-  (make-bot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10)) 0 0)) ;just... random but it a range that makes sence
+  (newBot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10)))) ;just... random but it a range that makes sence
 
 (define (mutate bot)
   (let ([mutationIndex (random (length (bot-parameters bot)))])
-    (make-bot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 5 15) 10)))) (drop (bot-parameters bot) (add1 mutationIndex))) 0 0)))
+    (newBot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 5 15) 10)))) (drop (bot-parameters bot) (add1 mutationIndex))))))
 
 ;kinda bot sex
 (define (mate bot1 bot2)
@@ -920,9 +946,6 @@
     (else "ERR - mating failed"))))
 
 ;fitness
-(define (breedNextGen botL [bots(updateMateChance botL)])
-  0)
-  
 (define (updateMateChance botL) ;a list of bots, with scores
   (let ([maxWins (sub1 (length botL))])
     ;(println (length botL))
@@ -985,7 +1008,7 @@
 
 
 ;random shit
-(define (crazyMyltiplay L1 L2)
+(define (crazyMyltiplay [L1 '(1 2 3)] [L2 '(1 2 3 4)])
   (map (lambda (L) (map (lambda (x) (* L x)) L1)) L2))
 
 (define (CT [L '(1 2 3 4 5 6 7 8 9 10)]) ;CT - Consept Test
@@ -993,29 +1016,6 @@
     ((empty? (rest L)) (list (list (first L) (* 2 (first L)))))
     (else (cons (list (first L) (* 2 (first L)))
                 (CT (rest L))))))
-
-(define (randomShit)
-(cons (tstfunction 1 (allMovesToStates start))
- (cons (tstfunction 1 (drop (allMovesToStates start) 1))
-  (cons (tstfunction 1 (drop (allMovesToStates start) 2))
-   (cons (tstfunction 1 (drop (allMovesToStates start) 3))
-    (cons (tstfunction 1 (drop (allMovesToStates start) 4))
-     (cons (tstfunction 1 (drop (allMovesToStates start) 5))
-      (cons (tstfunction 1 (drop (allMovesToStates start) 6))
-       (cons (tstfunction 1 (drop (allMovesToStates start) 7))
-        (cons (tstfunction 1 (drop (allMovesToStates start) 8))
-         (cons (tstfunction 1 (drop (allMovesToStates start) 9))
-          (cons (tstfunction 1 (drop (allMovesToStates start) 10))
-           (cons (tstfunction 1 (drop (allMovesToStates start) 11))
-            (cons (tstfunction 1 (drop (allMovesToStates start) 12))
-             (cons (tstfunction 1 (drop (allMovesToStates start) 13))
-              (cons (tstfunction 1 (drop (allMovesToStates start) 14))
-               (cons (tstfunction 1 (drop (allMovesToStates start) 15))
-                (cons (tstfunction 1 (drop (allMovesToStates start) 16))
-                 (cons (tstfunction 1 (drop (allMovesToStates start) 17))
-                  (cons (tstfunction 1 (drop (allMovesToStates start) 18))
-                   (list (tstfunction 1 (drop (allMovesToStates start) 19))
-                   )))))))))))))))))))))
 
 
 ;graphics
@@ -1160,7 +1160,7 @@
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot defultValues 0 0)) ;defult bot
 
-(define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
+(define bot1 (make-bot (list 8 5 1 2 0 0) 1 0))
 (define bot2 (make-bot (list -5 2 7 -12 0 0) 2 0)) ;I'm surprised... but its actually beating my bot 
 
 
