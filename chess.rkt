@@ -563,6 +563,12 @@
     ((equal? (first L) target) #T)
     (else (isIn? (rest L) target))))
 
+(define (replaceIndexWith L index item)
+  (let ([lenL (length L)])
+  (cond
+    ((= index 0) (cons item (rest L)))
+    ((= index (sub1 lenL)) (insertToEnd item (take L (sub1 lenL))))
+    (else (append (take L index) (list item) (drop L (add1 index)))))))
 
 ;reworked (ummmmmmm just the giant pile of new code I added)
 (define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
@@ -957,7 +963,27 @@
   (let ([totalScore (foldr (lambda (score1 score2) (+ score1 score2)) 0 (map bot-fitness botL))])
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
 
-;bot duels
+;bot duels (and full gen match list)
+(define (testGen botL [depth 2] [combinationL (combinations botL 2)]) ;a fancy list check
+    (cond
+      ((empty? combinationL) #|here goes the breeding, comparison to defult and next gen shit|# "ok" #|TMP output|#)
+      (else (round botL [depth 2] [combinationL (combinations botL 2)]))))
+       
+(define (round botL [depth 2] [combinationL (combinations botL 2)])
+  (let ([index1 (first (first combinationL))]
+        [index2 (second (first combinationL))])
+    (let ([bot1 (list-ref botL index1)]
+          [bot2 (list-ref botL index2)])
+      (let ([duelResult (match bot1 bot2)])
+        (let ([wins1 (first duelResult)]
+              [wins2 (second duelResult)])
+          (let ([ubot1 (addBotWins bot1 wins1)] ;u => updated
+                [ubot2 (addBotWins bot2 wins2)])
+          (testGen (replaceIndexWith (replaceIndexWith botL index1 ubot1) index2 ubot2) [depth 2] [combinationL (combinations botL 2)])))))))
+          
+(define (addBotWins bot wins) ;copies the bot and adds wins
+  (make-bot (bot-parameters bot) (+ (bot-winCounter bot) wins) 0)) ;it wont get used while the fitness is other that 0 anyway
+ 
 (define (match bot1 bot2 [depth 2])
   (let ([winner1 (botDuel bot1 bot2 depth)]
         [winner2 (resultInverter (botDuel bot2 bot1 depth))])
