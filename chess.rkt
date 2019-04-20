@@ -125,7 +125,8 @@
 
 (define (pawnMoves-startingLane B Xpos Ypos side [color (getColor B Xpos Ypos)]) 
   (cond                                    ;the 'side' inverts the movement of the pawn (its the color...)
-    ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos (+ Ypos side) side) (pawnMoves-regualarMove B Xpos Ypos side))) ;i check if he can move at all and then add amove IF he can go 2 tiles
+    ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos (+ Ypos side) side)
+                                                                                                         (pawnMoves-regualarMove B Xpos Ypos side))) ;i check if he can move at all and then add amove IF he can go 2 tiles
     (else (pawnMoves-regualarMove B Xpos Ypos side)))) ;its just gonna do its own thing...
     
 
@@ -852,15 +853,17 @@
 
 
 (define (updateParent childrenGroup) ;will return a state with the parent's board but the score of the best child
-  ;(display "STATES: ") (println childrenGroup)
   (let ([parent (traceBack (first childrenGroup) 1)])
-    ;(printState parent)
     (let ([parentBoard (state-board parent)]
           [parentColor (state-color parent)]
           [miniMaxedScore (state-score (min\max childrenGroup))]
           [grandParent (traceBack parent 1)])
-      ;(printState (make-state parentBoard miniMaxedScore parentColor grandParent))
-      ;(newline)
+      #|
+      (display "STATES: ") (println childrenGroup)
+      (printState parent)
+      (printState (make-state parentBoard miniMaxedScore parentColor grandParent))
+      (newline) |#
+      
       (make-state parentBoard miniMaxedScore parentColor grandParent))))
 
 ;needs to be outed
@@ -897,20 +900,20 @@
 
 
 ;genetic algorithm
-(define-struct bot (parameters winCounter fitness)) ;e and f unused (for now)
+(define-struct bot (parameters winCounter fitness))
              ;score calculation paremeters in list form
 
 (define (newBot paremeter) ;to avoid all the zeros needed to make a proper bot
   (make-bot paremeter 0 0))
 
-(define (resetBot bot) ;cleans the record of the bot (in other words it makes anew bot with the same parameters but wothout the winCouner of fitness)
+(define (resetBot bot) ;cleans the record of the bot (in other words it makes anew bot with the same parameters but wothout the winCouner or fitness)
   (newBot (bot-parameters bot)))
 
-(define (breedNextGen botL [bots (updateMateChance botL)])
-  (cond
-    ((empty? bots) '())
+(define (breedNextGen botL [bots (updateMateChance botL)] [toBreed (length botL)] [mutationchance 0.3])
+  (cond                                                                           ;mutationchance*100 = percentage of mutated offspring
+    ((= toBreed 0) '())
     ((onlyOneWon? bots) (list (resetBot (list-ref bots (indexOfFitness bots 1))) (randomGen (- (length bots) 2)))) ;so the next gen will actually be usefull.....
-    (else (cons (mate (pickParent bots) (pickParent bots)) '()))))
+    (else (cons (mutate (mate (pickParent bots) (pickParent bots)) mutationchance) (breedNextGen botL bots (sub1 toBreed))))))
 
 (define (indexOfFitness botL value) ;returns the index of the first bot with the given fitness
   (cond
@@ -918,6 +921,7 @@
     (else (add1 (indexOfFitness (rest botL) value)))))
 
 (define (pickParent botL [sum 0] [RND (random)]) ;needs a 'fitted' (with fitness) list of bots
+  ;(println botL)
   (let ([newSum (+ sum (bot-fitness (first botL)))])
     (cond
       ((or (> newSum RND) (= newSum RND)) (first botL))
@@ -937,9 +941,12 @@
 (define (newRandomBot)
   (newBot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10)))) ;just... random but it a range that makes sence
 
-(define (mutate bot)
-  (let ([mutationIndex (random (length (bot-parameters bot)))])
-    (newBot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 5 15) 10)))) (drop (bot-parameters bot) (add1 mutationIndex))))))
+(define (mutate bot mutationchance [RND (random)]) ;changes one parameter of the bot by a random percentage from 50 to 150
+  (cond
+    ((< mutationchance RND) bot)
+    (else 
+     (let ([mutationIndex (random (length (bot-parameters bot)))])
+       (newBot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 50 150) 100)))) (drop (bot-parameters bot) (add1 mutationIndex))))))))
 
 ;kinda bot sex
 (define (mate bot1 bot2)
@@ -963,17 +970,26 @@
     ;(newline)
     (normalizeFitness (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL))))
 
-(define (normalizeFitness botL)
+(define (normalizeFitness botL) ;changes the fitness to be a ratio so the total is always 1
   (let ([totalScore (foldr (lambda (score1 score2) (+ score1 score2)) 0 (map bot-fitness botL))])
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
 
 ;bot duels (and full gen match list)
-(define (testGen botL [depth 2] [combinationL (combinations* botL 2)]) ;a fancy list check
+(define (testGen botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;a fancy list check
     (cond
-      ((empty? combinationL) #|here goes the breeding, comparison to defult and next gen shit|# "ok" (printAllBots botL) #|TMP output|#)
-      (else (round botL depth combinationL))))
+      ((empty? combinationL) (compareBotToDefult (findBestBot botL) depth) (testGen (breedNextGen botL) depth (sub1 cycles 5)))
+      (else (round botL depth cycles combinationL))))
+
+(define (findBestBot botL)
+  (first (sort botL (lambda (a b) (> (bot-fitness a) (bot-fitness b))))))
+
+(define (compareBotToDefult bot [depth 2] [games 5] [wins 0] [totalGames (* games 2)]) ;will usualy compare the best bot
+  (cond                         ;games are matches with 2 rounds
+    ((= games 0) (display "bot parameters: ") (display (bot-parameters bot)) (displayln "win rate") (print (* (/ wins totalGames) 100)))
+    (else (compareBotToDefult bot depth (sub1 games) (+ wins (first (match bot DB depth))) totalGames))))
+
        
-(define (round botL [depth 2] [combinationL (combinations* botL 2)]) ;i need indexses
+(define (round botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;i need indexses
   (let ([index1 (first (first combinationL))]
         [index2 (second (first combinationL))])
     (let ([bot1 (list-ref botL index1)]
@@ -985,14 +1001,14 @@
                 [ubot2 (addBotWins bot2 wins2)])
             #|
             (printAllBots botL) (println 'done) ;debug
-            (println (bot-parameters bot1))
+            (println (bot-parameters bot1)) 
             (println (bot-parameters bot2))
             (println duelResult)
             (println wins1) (println wins2) (newline)
             (printBot ubot1) (newline)
             (printBot ubot2) (newline)
             |#
-          (testGen (replaceIndexWith (replaceIndexWith botL index1 ubot1) index2 ubot2) depth (rest combinationL))))))))
+          (testGen (replaceIndexWith (replaceIndexWith botL index1 ubot1) index2 ubot2) depth cycles (rest combinationL))))))))
           
 (define (addBotWins bot wins) ;copies the bot and adds wins
   (make-bot (bot-parameters bot) (+ (bot-winCounter bot) wins) 0)) ;it wont get used while the fitness is other that 0 anyway
@@ -1184,11 +1200,14 @@
   (displayMassage V "click the destination: (or on the piece you selected to pick again)")
   (let ([selectedTile (clickToboardPos V)])
     (cond
-      ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (sayAndClear V  "back to selection...") (wipeTile V) (selectPiece V B playerColor)) ;ok... here it is (back to selection)
+      ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
+                                         (sayAndClear V  "back to selection...")
+                                         (wipeTile V) (selectPiece V B playerColor)) ;ok... here it is (back to selection)
       ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
                                                                                                     (sayAndClear V  "can't go there...")
                                                                                                     (pickTarget movingPiece V B playerColor))
-      (else (wipeTile V) (clearMassage V "click the destination: (or on the piece you selected to pick again)") (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
+      (else (wipeTile V) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
+            (makeMove B (list  (list (first movingPiece) (second movingPiece)) (list (first selectedTile) (second selectedTile))))))))
 
                           
 ;startup
