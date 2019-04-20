@@ -977,7 +977,7 @@
 ;bot duels (and full gen match list)
 (define (testGen botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;a fancy list check
     (cond
-      ((empty? combinationL) (compareBotToDefult (findBestBot botL) depth) (testGen (breedNextGen botL) depth (sub1 cycles 5)))
+      ((empty? combinationL) (displayln "comraring best bot") (compareBotToDefult (findBestBot botL) depth) (displayln "generating new bots") (testGen (breedNextGen botL) depth (sub1 cycles)))
       (else (round botL depth cycles combinationL))))
 
 (define (findBestBot botL)
@@ -985,7 +985,7 @@
 
 (define (compareBotToDefult bot [depth 2] [games 5] [wins 0] [totalGames (* games 2)]) ;will usualy compare the best bot
   (cond                         ;games are matches with 2 rounds
-    ((= games 0) (display "bot parameters: ") (display (bot-parameters bot)) (displayln "win rate") (print (* (/ wins totalGames) 100)))
+    ((= games 0) (display "bot parameters: ") (displayln (bot-parameters bot)) (displayln "win rate ") (print (* (/ wins totalGames) 100)) (display #\%))
     (else (compareBotToDefult bot depth (sub1 games) (+ wins (first (match bot DB depth))) totalGames))))
 
        
@@ -1060,6 +1060,14 @@
     ((= result 0) 1)
     ((= result 1) 0)
     (else -1)))
+
+(define (runGames bot1 bot2 [depth 2] [matches 5] [results '()] [totalGames (* matches 2)])
+  (cond
+    ((zero? matches) (let ([wins1 (+ (map (lambda (L) (first L)) results))]
+                           [wins2 (+ (map (lambda (L) (first L)) results))])
+                     (display "bot 1 win rate: ") (println (* (/ wins1 totalGames) 100))
+                     (display "bot 2 win rate: ") (println (* (/ wins2 totalGames) 100))))
+    (else (runGames bot1 bot2 depth matches (cons (botDuel bot1 bot2 depth) results) totalGames))))
 
 
 ;random shit
