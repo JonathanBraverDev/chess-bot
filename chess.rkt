@@ -1062,12 +1062,13 @@
     (else -1)))
 
 (define (runGames bot1 bot2 [depth 2] [matches 5] [results '()] [totalGames (* matches 2)])
+  (println results)
   (cond
-    ((zero? matches) (let ([wins1 (+ (map (lambda (L) (first L)) results))]
-                           [wins2 (+ (map (lambda (L) (first L)) results))])
+    ((zero? matches) (let ([wins1 (foldr (lambda (a b) (+ a b)) 0 (map (lambda (L) (first L)) results))]
+                           [wins2 (foldr (lambda (a b) (+ a b)) 0 (map (lambda (L) (second L)) results))])
                      (display "bot 1 win rate: ") (println (* (/ wins1 totalGames) 100))
                      (display "bot 2 win rate: ") (println (* (/ wins2 totalGames) 100))))
-    (else (runGames bot1 bot2 depth (sub1 matches) (cons (botDuel bot1 bot2 depth) results) totalGames))))
+    (else (runGames bot1 bot2 depth (sub1 matches) (cons (match bot1 bot2 depth) results) totalGames))))
 
 
 ;random shit
@@ -1232,4 +1233,4 @@
 
 
 ;(play 1)
-         
+(close-viewport V1)  
