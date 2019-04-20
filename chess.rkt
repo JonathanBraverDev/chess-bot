@@ -1067,7 +1067,7 @@
                            [wins2 (+ (map (lambda (L) (first L)) results))])
                      (display "bot 1 win rate: ") (println (* (/ wins1 totalGames) 100))
                      (display "bot 2 win rate: ") (println (* (/ wins2 totalGames) 100))))
-    (else (runGames bot1 bot2 depth matches (cons (botDuel bot1 bot2 depth) results) totalGames))))
+    (else (runGames bot1 bot2 depth (sub1 matches) (cons (botDuel bot1 bot2 depth) results) totalGames))))
 
 
 ;random shit
