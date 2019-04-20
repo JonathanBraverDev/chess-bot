@@ -570,6 +570,10 @@
     ((= index (sub1 lenL)) (insertToEnd item (take L (sub1 lenL))))
     (else (append (take L index) (list item) (drop L (add1 index)))))))
 
+(define (combinations* L size)
+  (let ([L2 (vector->list (build-vector (length L) add1))])
+    (combinations (map (lambda (x) (sub1 x)) L2) size)))
+
 ;reworked (ummmmmmm just the giant pile of new code I added)
 (define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
   (let ([targetX (first (second L))]                                                    ;RETURNS the final BOARD of every move
@@ -964,22 +968,31 @@
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
 
 ;bot duels (and full gen match list)
-(define (testGen botL [depth 2] [combinationL (combinations botL 2)]) ;a fancy list check
+(define (testGen botL [depth 2] [combinationL (combinations* botL 2)]) ;a fancy list check
     (cond
-      ((empty? combinationL) #|here goes the breeding, comparison to defult and next gen shit|# "ok" #|TMP output|#)
-      (else (round botL [depth 2] [combinationL (combinations botL 2)]))))
+      ((empty? combinationL) #|here goes the breeding, comparison to defult and next gen shit|# "ok" (printAllBots botL) #|TMP output|#)
+      (else (round botL depth combinationL))))
        
-(define (round botL [depth 2] [combinationL (combinations botL 2)])
+(define (round botL [depth 2] [combinationL (combinations* botL 2)]) ;i need indexses
   (let ([index1 (first (first combinationL))]
         [index2 (second (first combinationL))])
     (let ([bot1 (list-ref botL index1)]
           [bot2 (list-ref botL index2)])
-      (let ([duelResult (match bot1 bot2)])
+      (let ([duelResult (match bot1 bot2 depth)])
         (let ([wins1 (first duelResult)]
               [wins2 (second duelResult)])
           (let ([ubot1 (addBotWins bot1 wins1)] ;u => updated
                 [ubot2 (addBotWins bot2 wins2)])
-          (testGen (replaceIndexWith (replaceIndexWith botL index1 ubot1) index2 ubot2) [depth 2] [combinationL (combinations botL 2)])))))))
+            #|
+            (printAllBots botL) (println 'done) ;debug
+            (println (bot-parameters bot1))
+            (println (bot-parameters bot2))
+            (println duelResult)
+            (println wins1) (println wins2) (newline)
+            (printBot ubot1) (newline)
+            (printBot ubot2) (newline)
+            |#
+          (testGen (replaceIndexWith (replaceIndexWith botL index1 ubot1) index2 ubot2) depth (rest combinationL))))))))
           
 (define (addBotWins bot wins) ;copies the bot and adds wins
   (make-bot (bot-parameters bot) (+ (bot-winCounter bot) wins) 0)) ;it wont get used while the fitness is other that 0 anyway
@@ -997,17 +1010,17 @@
     (else 0))) ;the bot won no games - ties or not... dosent matter
 
 (define (botDuel bot1 bot2 [depth 2] [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
-  (printBoard B) ;the full struct of the bot
+  ;(printBoard B) ;the full struct of the bot
   (cond
     ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter) -1) ;tie code
     ((win? B #\W) (resultPrinter 1 turnCounter #\W) 0)
     ((win? B #\B) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
     (else                          ;its sooo bad
-     (display "turn ") (println turnCounter)
+    #| (display "turn ") (println turnCounter) ;printing
      (cond
        ((equal? color #\W) (displayln "white's turn"))
        (else (displayln "black's turn")))
-     (newline)
+     (newline) |#
      (let ([newB (state-board (pickBotAndMove B bot1 bot2 color depth))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
@@ -1186,8 +1199,8 @@
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot defultValues 0 0)) ;defult bot
 
-(define bot1 (make-bot (list 8 5 1 2 0 0) 1 0))
-(define bot2 (make-bot (list -5 2 7 -12 0 0) 2 0)) ;I'm surprised... but its actually beating my bot 
+(define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
+(define bot2 (make-bot (list -5 2 7 -12 0 0) 0 0)) ;I'm surprised... but its actually beating my bot 
 
 
 
