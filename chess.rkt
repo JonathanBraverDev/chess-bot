@@ -507,7 +507,7 @@
       (else (3TimesRepetition B state counter (sub1 limit))))))
 
 ;general use
-(define (attackedKing? B color)
+(define (attackedKing? B color) ;makes the bot crash when the king is killed in one of the stages of minimax
   (let ([kingPos (findKing B color)])
     (cond
       ((threatenedTile? B (first kingPos) (second kingPos)) #T)
