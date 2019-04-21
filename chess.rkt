@@ -341,7 +341,7 @@
 (define (PVP B [color #\W])
   (cond
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
-    ((empty? (filterChecked B color)) (displayln "stalemate") (newline))
+    ;((empty? (filterChecked B color)) (displayln "stalemate") (newline))
     (else
      (cond
        ((equal? color #\W) (displayln "white's turn"))
@@ -378,7 +378,7 @@
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
     ((win? B color #T) (print (invertColor color)) (display " ") (displayln "won") (newline))
-    ((empty? (filterChecked B color)) (displayln "stalemate") (newline))
+    ;((empty? (filterChecked B color)) (displayln "stalemate") (newline))
     (else                          ;its sooo bad
      (println (attackedKing? B color)) ;printing check
      (display "turn ") (println turnCounter)
@@ -454,7 +454,7 @@
     ((= index (length L)) '())
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
 
-
+#| trash code, just makes the game crash
 (define (filterChecked B color [L (allNewBoards B color)])
     (ignoreBadMoves L color)) ;just an activator for a better function that ACTUALLY does its job
 
@@ -463,7 +463,7 @@
     ((empty? L) '()) ;defult return
     ((attackedKing? (first L) color) (ignoreBadMoves (rest L) color)) ;good move passed on
     (else (cons (first L) (ignoreBadMoves (rest L) color))))) ;bad move removed from list
-
+|#
 
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
                        ;RETURNS a board updated after the given move
@@ -481,7 +481,7 @@
 ;abit tooooo agressive about putting games down
 (define (draw? B color) ;I may have missed someting, and every option is a new line ro make it easier to read and understand (so its not a page-long or)
   (cond
-    ((and (not (attackedKing? B color)) (empty? (filterChecked B color))) #T) ;no moves, king NOT under attack
+    ;((and (not (attackedKing? B color)) (empty? (filterChecked B color))) #T) ;no moves, king NOT under attack
     ((and (= (length (findAllColor B #\W)) 1) (= (length (findAllColor B #\B)) 1)) #T) ;only kings left (i need to disallow killing the king for that to work properly (done))
     ((and (= (+ (length (findAllColor B #\B)) (length (findAllColor B #\W))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is a similar thing with multiple bishpps on the same color)
                                                                                     (findAllType B #\H))) #T) ;king + knight VS king
@@ -507,7 +507,7 @@
       (else (3TimesRepetition B state counter (sub1 limit))))))
 
 ;general use
-(define (attackedKing? B color) ;makes the bot crash when the king is killed in one of the stages of minimax
+(define (attackedKing? B color) ;makes the bot crash when the king is killed in the 
   (let ([kingPos (findKing B color)])
     (cond
       ((threatenedTile? B (first kingPos) (second kingPos)) #T)
@@ -1028,7 +1028,7 @@
 (define (botDuel bot1 bot2 [depth 2] [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
   ;(printBoard B) ;the full struct of the bot
   (cond
-    ((or (= turnsToTie 0) (empty? (filterChecked B color))) (resultPrinter 0 turnCounter) -1) ;tie code
+    (#|(or|# (= turnsToTie 0) #|(empty? (filterChecked B color)))|# (resultPrinter 0 turnCounter) -1) ;tie code
     ((win? B #\W) (resultPrinter 1 turnCounter #\W) 0)
     ((win? B #\B) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
     (else                          ;its sooo bad
