@@ -985,7 +985,7 @@
 
 (define (compareBotToDefult bot [depth 2] [games 5] [wins 0] [totalGames (* games 2)]) ;will usualy compare the best bot
   (cond                         ;games are matches with 2 rounds
-    ((= games 0) (display "bot parameters: ") (displayln (bot-parameters bot)) (displayln "win rate ") (print (* (/ wins totalGames) 100)) (display #\%))
+    ((= games 0) (display "bot parameters: ") (displayln (bot-parameters bot)) (display "win rate ") (print (* (/ wins totalGames) 100)) (displayln #\%))
     (else (compareBotToDefult bot depth (sub1 games) (+ wins (first (match bot DB depth))) totalGames))))
 
        
