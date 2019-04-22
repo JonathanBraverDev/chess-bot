@@ -356,7 +356,7 @@
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-(define (PVEdemo [depth 2] [prameters defultValues] [B B1] [color #\W] [human #T] [V V1]) ;its a completly random bot
+(define (PVEdemo [depth 2] [prameters defultValues] [B B1] [V V1] [color #\W] [human #T]) ;its a completly random bot
   (fillGraphicBoard V B)
   (cond
     ((win? B color #T) (print color) (winMassage V color))
@@ -367,10 +367,10 @@
      (cond
        (human (let ([newPlayerB (selectPiece V B color)])
                 (clearGraphicBoard V B)
-                (PVEdemo depth prameters newPlayerB (invertColor color) (invertPlayer human))))
+                (PVEdemo depth prameters newPlayerB V (invertColor color) (invertPlayer human))))
        (else (let ([newB (state-board (lazyMinMax depth (SB B color) prameters))])
                (clearGraphicBoard V B)
-               (PVEdemo depth prameters newB (invertColor color) (invertPlayer human))))))))
+               (PVEdemo depth prameters newB V (invertColor color) (invertPlayer human))))))))
 
 (define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
@@ -1221,18 +1221,103 @@
                           
 ;startup
 (define (play [depth 2] [parameters defultValues])
-  (drawBoard V1)
-  (PVEdemo depth parameters))
+  (define V2 (open-viewport "V1" 428 468))
+  (drawBoard V2)
+  (PVEdemo depth parameters B1 V2))
 
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot defultValues 0 0)) ;defult bot
+(define RB (newRandomBot)) ;random bot
 
 (define bot1 (make-bot (list 8 5 1 2 0 0) 0 0))
 (define bot2 (make-bot (list -5 2 7 -12 0 0) 0 0)) ;I'm surprised... but its actually beating my bot
 
 (define B7 (newBot '(-2 0 -7 -53/5 7 -8))) ;70% bot
 
+;main
+(define (modePicker)
+  (displayln "pick a mode to use:")
+  (displayln "1. run genetic algorithem")
+  (displayln "2. play aginst a bot")
+  (displayln "3. terminate")
+  (let ([answer (read)])
+    (cond
+      ((= answer 1) (newline) (inputGeneticInfo))
+      ((= answer 2) (newline) (inputPvEInfo))
+      ((= answer 3) (display "goodbye"))
+      (else (displayln "wrong input, please try again") (newline) (modePicker)))))
 
+(define (inputGeneticInfo)
+  (displayln "type in the generation size (5 and up is NOT recomended)")
+  (let ([answer1 (read)])
+    (displayln "type in the ammout of moves to look ahead (0 is just minimax from the avalible moves)")
+    (let ([answer2 (read)])
+      (displayln "type in the number of iterations size (5 and up is NOT recomended)")
+      (let ([answer3 (read)])
+        (cond
+          ((not (validInput? answer1 answer2 answer3)) (displayln "only positive integers are valid input") (newline) (inputGeneticInfo))
+          (else (displayln "not get ready for a loooonnnggggg wait...") (newline)
+                (testGen (randomGen answer1)  answer2 answer3)))))))
 
-(play 1 (bot-parameters B7))
-;(close-viewport V1)  
+(define (validInput? num1 num2 num3)
+  (cond
+    ((or (not (exact-positive-integer? num1))
+         (not (exact-nonnegative-integer?  num2))
+         (not (exact-positive-integer? num3))) #F)
+    (else #T)))
+
+(define (inputPvEInfo)
+  (displayln "pick a pre-made bot or make your own:")
+  (displayln "1. defult bot")
+  (displayln "2. randomly generated bot")
+  (displayln "3. best bot so far from the genetic algorithem (70% win rate)")
+  (displayln "4. make your own bot")
+  (let ([answer (read)])
+    (cond
+      ((= answer 1) (pickDepth (bot-parameters DB)))
+      ((= answer 2) (display "you will be playing aginst ") (displayln (bot-parameters RB))
+                    (pickDepth (bot-parameters RB)))
+      ((= answer 3) (pickDepth (bot-parameters B7)))
+      ((= answer 4) (makeYourBot))
+      (else (displayln "wrong input, please try again") (newline) (inputPvEInfo)))))
+
+(define (makeYourBot)
+  (displayln "enter the parameters you wish to play against in order (the numbers can be negavive, fractions, all you like)")
+  (displayln "first")
+  (let ([parameter1 (read)])
+    (displayln "second")
+    (let ([parameter2 (read)])
+       (displayln "third")
+      (let ([parameter3 (read)])
+        (displayln "forth")
+        (let ([parameter4 (read)])
+          (displayln "last one")
+          (let ([parameter5 (read)])
+            (cond
+              ((or (not (number? parameter1))
+                   (not (number? parameter2))
+                   (not (number? parameter3))
+                   (not (number? parameter4))
+                   (not (number? parameter5))) (displayln "only numbers are valid input") (newline) (makeYourBot))
+              (else (pickDepth (list parameter1 parameter2 parameter3 parameter4 parameter5))))))))))
+            
+
+(define (pickDepth [parameters defultValues])
+  (displayln "pick the ammout of moves to look ahead (0 is just minimax from the avalible moves)")
+  (displayln "anything above 2 is NOT reconemded")
+  (let ([answer (read)])
+    (cond
+      ((not (exact-nonnegative-integer? answer)) (displayln "only integers from 0 and up are valid") (newline) (pickDepth parameters))
+      (else (newline) (display "you are palying as the blue pieces") (play answer parameters)))))
+#|  
+;UI
+(define (startup)
+  1)
+
+(define (wipe V)
+  ((clear-viewport V)))
+|#
+
+(close-viewport V1)
+(modePicker)
+  
