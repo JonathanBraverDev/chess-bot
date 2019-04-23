@@ -1242,6 +1242,7 @@
   (displayln "3. terminate")
   (let ([answer (read)])
     (cond
+      ((not (number? answer)) (displayln "wrong input, please try again") (newline) (modePicker))
       ((= answer 1) (newline) (inputGeneticInfo))
       ((= answer 2) (newline) (inputPvEInfo))
       ((= answer 3) (display "goodbye"))
@@ -1274,6 +1275,7 @@
   (displayln "4. make your own bot")
   (let ([answer (read)])
     (cond
+      ((not (number? answer)) (displayln "wrong input, please try again") (newline) (inputPvEInfo))
       ((= answer 1) (pickDepth (bot-parameters DB)))
       ((= answer 2) (display "you will be playing aginst ") (displayln (bot-parameters RB))
                     (pickDepth (bot-parameters RB)))
@@ -1305,17 +1307,16 @@
 (define (pickDepth [parameters defultValues])
   (displayln "pick the ammout of moves to look ahead (0 is just minimax from the avalible moves)")
   (displayln "anything above 2 is NOT reconemded")
+  (displayln "(you will be palying as the blue pieces)")
   (let ([answer (read)])
     (cond
       ((not (exact-nonnegative-integer? answer)) (displayln "only integers from 0 and up are valid") (newline) (pickDepth parameters))
-      (else (newline) (display "you are palying as the blue pieces") (play answer parameters)))))
+      (else (play answer parameters)))))
 #|  
 ;UI
-(define (startup)
-  1)
 
-(define (wipe V)
-  ((clear-viewport V)))
+;proper UI later
+
 |#
 
 (close-viewport V1)
