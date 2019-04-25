@@ -204,10 +204,10 @@
         (flatten-lists
          (removeAllOccurrencesOf '()
                                  (let ([color (getColor B Xpos Ypos)])
-                                   (list (lookLine B Xpos Ypos color) ;will run defult (down)
-                                         (lookLine B Xpos Ypos color 0 -1) ;up
-                                         (lookLine B Xpos Ypos color 1 0) ;right
-                                         (lookLine B Xpos Ypos color -1 0))))))) ;left
+                                   (list (lookDir B Xpos Ypos color 0 1) ;will run defult (down)
+                                         (lookDir B Xpos Ypos color 0 -1) ;up
+                                         (lookDir B Xpos Ypos color 1 0) ;right
+                                         (lookDir B Xpos Ypos color -1 0))))))) ;left
 
 ;casteling       gonna be a b**** (and idk if i'll bother)
 
@@ -218,10 +218,10 @@
         (flatten-lists
          (removeAllOccurrencesOf '()
                                  (let ([color (getColor B Xpos Ypos)])
-                                   (list (lookDiagonal B Xpos Ypos color) ;defult (bottom right)
-                                         (lookDiagonal B Xpos Ypos color 1 -1) ;upper right
-                                         (lookDiagonal B Xpos Ypos color -1 1) ;bottom left
-                                         (lookDiagonal B Xpos Ypos color -1 -1))))))) ;upper left
+                                   (list (lookDir B Xpos Ypos color 1 1) ;defult (bottom right)
+                                         (lookDir B Xpos Ypos color 1 -1) ;upper right
+                                         (lookDir B Xpos Ypos color -1 1) ;bottom left
+                                         (lookDir B Xpos Ypos color -1 -1))))))) ;upper left
 
 
 ;queen movement (SOOOO EZ) ;WORKING
@@ -244,20 +244,12 @@
 
 
 ;move options
-(define (lookLine B Xpos Ypos color [Xchange 0] [Ychange 1] [ignoreTile #T]) ;ONLY one of the cnages must be active
-  (cond                                                                ;defult is WHITE pawn movement (-1 for black pawn)
-    (ignoreTile (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
-    ((kill? B Xpos Ypos color) (cons (list Xpos Ypos) '()))
-    ((not (LegalMove? B Xpos Ypos color)) '())
-    (else (cons (list Xpos Ypos) (lookLine B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
-
-(define (lookDiagonal B Xpos Ypos color [Xchange 1] [Ychange 1] [ignoreTile #T]) ;the cnages are 1 or -1
-  (cond                                                                    ;defult is bottom right diagonal
-    (ignoreTile (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F))
+(define (lookDir B Xpos Ypos color Xchange Ychange [ignoreTile #T])
+  (cond
+    (ignoreTile (lookDir B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)) ;to ingore the origin location
     ((kill? B Xpos Ypos color) (cons (list Xpos Ypos) '())) ;to prevent further checks if the piece finds a kill (it cant over or kill multiple pieses in one turn)
     ((not (LegalMove? B Xpos Ypos color)) '())
-    (else (cons (list Xpos Ypos) (lookDiagonal B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
-
+    (else (cons (list Xpos Ypos) (lookDir B (+ Xpos Xchange) (+ Ypos Ychange) color Xchange Ychange #F)))))
 
 
 ;movement checks
@@ -395,14 +387,14 @@
 
 ;board operations
 (define (findKing B color)
-  (searchForKing B (makePiece #\K color)))
+  (searchForPiece B (makePiece #\K color)))
 
-(define (searchForKing B [target (makePiece #\K #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
+(define (searchForPiece B [target (makePiece #\K #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
   (cond
     ((= Ypos (length B)) '()) ;can cause problems... but maybe not... i'm filtereint these out on every function (and the random game was fine...)
-    ((= Xpos (length (first B))) (searchForKing B target 0 (add1 Ypos)))
+    ((= Xpos (length (first B))) (searchForPiece B target 0 (add1 Ypos)))
     ((equal? (getTileAt B Xpos Ypos) target) (list Xpos Ypos))
-    (else (searchForKing B target (add1 Xpos) Ypos))))
+    (else (searchForPiece B target (add1 Xpos) Ypos))))
 
 
 (define (findAllColor B color [Xpos 0] [Ypos 0])
@@ -444,6 +436,8 @@
 
 
 ;board-wide move managment
+
+#| dead code
 (define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
   (cond                                                      ;or just the origin in one move is avalible
     ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
@@ -453,6 +447,7 @@
   (cond
     ((= index (length L)) '())
     (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
+|#
 
 #| trash code, just makes the game crash
 (define (filterChecked B color [L (allNewBoards B color)])
@@ -802,6 +797,7 @@
 
 
 ;debug tool(s)
+#|
 (define (listToBoard LL) ;LL = List List ;)
   (cond
     ((empty? LL) '())
@@ -811,7 +807,7 @@
   (cond
     ((empty? L) '())
     (else (cons (string (first L))  (lineFormat (rest L))))))
-                ;this dosent work (and its only debug so IDC)
+|#               ;this dosent work (and its only debug so IDC) 
 
 (define (cheakKing B color)
   (let ([kingPos (findKing B color)])
