@@ -125,8 +125,8 @@
 
 (define (pawnMoves-startingLane B Xpos Ypos side [color (getColor B Xpos Ypos)]) 
   (cond                                    ;the 'side' inverts the movement of the pawn (its the color...)
-    ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos (+ Ypos side) side)
-                                                                                                         (pawnMoves-regualarMove B Xpos Ypos side))) ;i check if he can move at all and then add amove IF he can go 2 tiles
+    ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos Ypos side)
+                                                                                                         (list (pawnMoves-regualarMove B Xpos (+ Ypos side) side)))) ;i check if he can move at all and then add amove IF he can go 2 tiles
     (else (pawnMoves-regualarMove B Xpos Ypos side)))) ;its just gonna do its own thing...
     
 
