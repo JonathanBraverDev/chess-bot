@@ -461,7 +461,7 @@
 ;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
 
  ;draw conditions
-(define (onlyKingsLeft? B color) ;king duel
+(define (onlyKingsLeft? B) ;king duel
   ((= (length (findAllPieces B)) (length #|just to be sure|# (findAllType #\K B)) 2) #T))
 
 (define (3TimesRepetition state) ;3 times the same board
@@ -700,9 +700,9 @@
 (define (calcScore B color [pieces (findAllColor B color)] [parameters defultValues])
   (cond
     ((empty? pieces) (winValue (invertColor color)))
-    (else (noIdeaForAname B color pieces parameters))))
+    (else (scoreCalculator B color pieces parameters))))
 
-(define (noIdeaForAname B color pieces parameters) ;just adding input check
+(define (scoreCalculator B color pieces parameters) ;just adding input check
   (let ([pieceX (first (first pieces))]
         [pieceY (second (first pieces))])
   (cond
