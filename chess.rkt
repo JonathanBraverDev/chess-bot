@@ -348,7 +348,7 @@
   (define Ypos (read))
   (moveOptions B Xpos Ypos color))
 
-(define (PVEdemo [depth 2] [prameters defultValues] [B B1] [V V1] [color #\W] [human #T]) ;its a completly random bot
+(define (PVE [depth 2] [prameters defultValues] [B B1] [V V1] [color #\W] [human #T]) ;its a completly random bot
   (fillGraphicBoard V B)
   (cond
     ((win? B color #T) (print color) (winMassage V color))
@@ -359,12 +359,12 @@
      (cond
        (human (let ([newPlayerB (selectPiece V B color)])
                 (clearGraphicBoard V B)
-                (PVEdemo depth prameters newPlayerB V (invertColor color) (invertPlayer human))))
+                (PVE depth prameters newPlayerB V (invertColor color) (invertPlayer human))))
        (else (let ([newB (state-board (lazyMinMax depth (SB B color) prameters))])
                (clearGraphicBoard V B)
-               (PVEdemo depth prameters newB V (invertColor color) (invertPlayer human))))))))
+               (PVE depth prameters newB V (invertColor color) (invertPlayer human))))))))
 
-(define (EVEbullshit [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
+(define (EVE [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
   (printBoard B)
   (println (scoreForBoard B color))
   (cond
@@ -381,8 +381,8 @@
      (let ([newB (state-board (lazyMinMax depth (SB B color)))]
            [pieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
        (cond
-         ((= lastPieceCount pieceCount) (EVEbullshit newB depth (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
-         (else (EVEbullshit newB depth (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
+         ((= lastPieceCount pieceCount) (EVE newB depth (invertColor color) (add1 turnCounter) (sub1 turnsToTie) pieceCount))
+         (else (EVE newB depth (invertColor color) (add1 turnCounter) 50 pieceCount)))))))
    
 
 ;board operations
@@ -649,7 +649,7 @@
 (define (test [B B1] [depth 2] [times 10] [counter 0])
   (cond
     ((= counter times) (newline) (display "no crash"))
-    (else (display "game No ") (println (add1 counter)) (EVEbullshit B depth) (test B depth times (add1 counter)))))
+    (else (display "game No ") (println (add1 counter)) (EVE B depth) (test B depth times (add1 counter)))))
 
 
 ;scoring
@@ -1183,7 +1183,7 @@
 (define (play [depth 2] [parameters defultValues])
   (define V2 (open-viewport "V1" 428 468))
   (drawBoard V2)
-  (PVEdemo depth parameters B1 V2))
+  (PVE depth parameters B1 V2))
 
 (define start (make-state B1 0 #\W 'none))
 (define DB (make-bot defultValues 0 0)) ;defult bot
