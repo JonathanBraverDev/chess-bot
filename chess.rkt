@@ -436,30 +436,6 @@
 
 
 ;board-wide move managment
-
-#| dead code
-(define (allMovesForColor B color [L (findAllColor B color)]);RETURNS a list of all origin points of pieses and tiles they van move into 
-  (cond                                                      ;or just the origin in one move is avalible
-    ((empty? (rest L)) (list (possibleMovesForTile B (first (first L)) (second (first L)))))
-    (else (cons (possibleMovesForTile B (first (first L)) (second (first L)))  (allMovesForColor B color (rest L))))))
-
-(define (addOriginPosToDestanation L [index 1]) ;index 0 is the origin ;) (no bugs XD)
-  (cond
-    ((= index (length L)) '())
-    (else (cons (list (first L) (list-ref L index)) (addOriginPosToDestanation L (add1 index))))))
-|#
-
-#| trash code, just makes the game crash
-(define (filterChecked B color [L (allNewBoards B color)])
-    (ignoreBadMoves L color)) ;just an activator for a better function that ACTUALLY does its job
-
-(define (ignoreBadMoves L color) ;'bad moves' are when the king is cheched and left that way (no idea for a better name... (psssst, what about 'can't run or be defended'?)
-  (cond                ;L is a LIST of BOARDS
-    ((empty? L) '()) ;defult return
-    ((attackedKing? (first L) color) (ignoreBadMoves (rest L) color)) ;good move passed on
-    (else (cons (first L) (ignoreBadMoves (rest L) color))))) ;bad move removed from list
-|#
-
 (define (makeMove B L) ;GETS a single move '((originX originY) (destX destY))
                        ;RETURNS a board updated after the given move
   (moveTo B (first (first L)) (second (first L)) (first (second L)) (second (second L))))
@@ -797,18 +773,6 @@
 
 
 ;debug tool(s)
-#|
-(define (listToBoard LL) ;LL = List List ;)
-  (cond
-    ((empty? LL) '())
-    (else (cons (lineFormat (first LL)) (listToBoard (rest LL))))))
-
-(define (lineFormat L)
-  (cond
-    ((empty? L) '())
-    (else (cons (string (first L))  (lineFormat (rest L))))))
-|#               ;this dosent work (and its only debug so IDC) 
-
 (define (cheakKing B color)
   (let ([kingPos (findKing B color)])
     (KingPossibleMoves B (first kingPos) (second kingPos))))
@@ -1024,7 +988,7 @@
 (define (botDuel bot1 bot2 [depth 2] [B B1] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
   ;(printBoard B) ;the full struct of the bot
   (cond
-    (#|(or|# (= turnsToTie 0) #|(empty? (filterChecked B color)))|# (resultPrinter 0 turnCounter) -1) ;tie code
+    ((= turnsToTie 0) (resultPrinter 0 turnCounter) -1) ;tie code
     ((win? B #\W) (resultPrinter 1 turnCounter #\W) 0)
     ((win? B #\B) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
     (else                          ;its sooo bad
