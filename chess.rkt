@@ -1253,15 +1253,18 @@
       (let ([parameter3 (read)])
         (displayln "forth")
         (let ([parameter4 (read)])
-          (displayln "last one")
+          (displayln "fifth")
           (let ([parameter5 (read)])
+            (displayln "last one")
+            (let ([parameter6 (read)])
             (cond
               ((or (not (number? parameter1))
                    (not (number? parameter2))
                    (not (number? parameter3))
                    (not (number? parameter4))
-                   (not (number? parameter5))) (displayln "only numbers are valid input") (newline) (makeYourBot))
-              (else (pickDepth (list parameter1 parameter2 parameter3 parameter4 parameter5))))))))))
+                   (not (number? parameter5))
+                   (not (number? parameter6))) (displayln "only numbers are valid input") (newline) (makeYourBot))
+              (else (pickDepth (list parameter1 parameter2 parameter3 parameter4 parameter5 parameter6)))))))))))
             
 
 (define (pickDepth [parameters defultValues])
