@@ -5,14 +5,14 @@
 (define-struct state (board score color parent #|kingAttacked?|#))
 
 
-(define B1 '(("WR" "WH" "WB" "WQ" "WK" "WB" "WH" "WR")
+(define B1 '(("WR" "WH" "WB" "WK" "WQ" "WB" "WH" "WR")
              ("WP" "WP" "WP" "WP" "WP" "WP" "WP" "WP")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("--" "--" "--" "--" "--" "--" "--" "--")
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
-             ("BR" "BH" "BB" "BQ" "BK" "BB" "BH" "BR")))
+             ("BR" "BH" "BB" "BK" "BQ" "BB" "BH" "BR")))
 
 (define TST '(("WQ" "WK" "--")
               ("--" "--" "--")
