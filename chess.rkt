@@ -343,10 +343,10 @@
 (define (selectTile B [color #\W]) ;will be graphical later, but still use the same core so it's ok
   (printBoard B)
   (displayln "enter X of tile (up to 7)")
-  (define Xpos (read))
-  (displayln "enter Y of tile (up tp 7)")
-  (define Ypos (read))
-  (moveOptions B Xpos Ypos color))
+  (let ([Xpos (read)])
+    (displayln "enter Y of tile (up tp 7)")
+    (let ([Ypos (read)])
+      (moveOptions B Xpos Ypos color))))
 
 (define (PVE [depth 2] [prameters defultValues] [B B1] [V V1] [color #\W] [human #T]) ;its a completly random bot
   (fillGraphicBoard V B)
