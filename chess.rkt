@@ -14,9 +14,14 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BK" "BQ" "BB" "BH" "BR")))
 
-(define TST '(("WQ" "WK" "--")
-              ("--" "--" "--")
-              ("--" "BK" "BQ")))
+(define TST '(("WP" "--" "--" "--" "--" "--" "--" "WK")
+              ("BP" "--" "--" "--" "--" "--" "--" "--")
+              ("--" "--" "--" "--" "--" "--" "--" "--")
+              ("--" "--" "--" "--" "--" "--" "--" "--")
+              ("--" "--" "--" "--" "--" "--" "--" "--")
+              ("--" "--" "--" "--" "--" "--" "--" "--")
+              ("--" "WR" "--" "WR" "--" "--" "--" "WP")
+              ("--" "--" "--" "--" "BK" "--" "--" "--")))
 
 
 (define WK "WK")
@@ -674,7 +679,7 @@
 (define defultValues (list mountaintopBonus hillsBonus vallyBonus swampBonus kingBase checkBonus #|more values|#))
 ;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
-(define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
+(define (scoreForBoard B color [start #T] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
@@ -686,7 +691,7 @@
     ((attackedKing? B (invertColor color)) (sixth parameters))
     (else 0)))
   
-(define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
+(define (winCheck B color [start #T]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
   (cond
     ((win? B color start) (winValue color))
     (else #F)))
