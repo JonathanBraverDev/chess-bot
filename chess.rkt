@@ -1154,8 +1154,8 @@
 
 (define (winMassage V color) ;the color that won, not the color of the text
   (cond
-    ((equal? color #\W) (displayMassage V "White won"))
-    (else (displayMassage V "Black won"))))
+    ((equal? color #\W) (displayMassage V "Blue won")) ;white
+    (else (displayMassage V "Red won")))) ;black
 
 ;move selection (G)
 (define (selectPiece V B playerColor)
