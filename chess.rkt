@@ -1306,25 +1306,6 @@
                 [parent hidden]
                 [init-value"number of iterations"]))
 
-(define (validInput? num1 num2 num3)
-  (cond
-    ((or (not (exact-positive-integer? num1))
-         (not (exact-nonnegative-integer?  num2))
-         (not (exact-positive-integer? num3))) #F)
-    (else #T)))
-
-(define (inputGeneticInfo)
-  
-;  (send MS2 set-label "generation size")
-;  (send MS3 set-label "ammout of moves to look ahead")
-;  (send MS4 set-label "number of iterations")
-  (let ([answer1 (send TF1 get-value)]
-        [answer2 (send TF2 get-value)]
-        [answer3 (send TF3 get-value)])
-        (cond
-          ((not (validInput? answer1 answer2 answer3)) (inputGeneticInfo))
-          (else (displayln "get get ready for a loooonnnggggg wait...") (newline)))))
-                ;(testGen (randomGen answer1)  answer2 answer3)))))
 
 (define BT1 (new button% [label "play"]
                 [parent P1]
@@ -1346,7 +1327,7 @@
                                           (cond
                                             ((not (validInput? answer1 answer2 answer3)) (send MS1 set-label "check your input") (sleep 1)
                                                                                          (send MS1 set-label "only positive integers are valid input"))
-                                            (else #|(testGen (randomGen answer1) answer2 answer3)|# (send MS1 set-label "ITS WORKING!")))))]))
+                                            (else (testGen (randomGen answer1) answer2 answer3)))))]))
 
 (define TF (new text-field% [label "first input"]
                 [parent hidden]
