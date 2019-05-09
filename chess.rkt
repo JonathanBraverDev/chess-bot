@@ -1,6 +1,8 @@
 #lang racket
 (require racket/list)
 (require graphics/graphics)
+(require racket/gui/base)
+(require racket/format)
 
 (define-struct state (board score color parent))
 
@@ -1138,7 +1140,7 @@
                           
 ;startup
 (define (play [depth 2] [parameters defultValues])
-  (define V2 (open-viewport "V1" 428 468))
+  (define V2 (open-viewport "PvE board" 428 468))
   (drawBoard V2)
   (PVE depth parameters B1 V2))
 
@@ -1162,7 +1164,7 @@
       ((not (number? answer)) (displayln "wrong input, please try again") (newline) (modePicker))
       ((= answer 1) (newline) (inputGeneticInfo))
       ((= answer 2) (newline) (inputPvEInfo))
-      ((= answer 3) (display "goodbye"))
+      ((= answer 3) (display "goodbye") (sleep 1))
       (else (displayln "wrong input, please try again") (newline) (modePicker)))))
 
 (define (inputGeneticInfo)
@@ -1239,5 +1241,117 @@
   
 
 
+;UI - its sooooooooooo bad
+define F1 (new frame% [label "menu"]
+                [x 100]
+                [y 100]
+                [min-width 300]	 
+                [min-height 175]
+                [stretchable-width #F]	 
+                [stretchable-height #F]))
+
+(define P1 (new vertical-panel%
+               [alignment '(center center)]
+                [parent F1]))
+
+(define P2 (new vertical-panel%
+                [style '(deleted)]
+                [alignment '(left top)]
+                [parent F1]))
+
+(define P3 (new vertical-panel%
+                [style '(deleted)]
+                [alignment '(left top)]
+                [parent F1]))
+
+(define hidden (new vertical-panel%
+                [style '(deleted)]
+                [parent F1]))
+
+(define MS1 (new message% [label "F you"]
+                	[auto-resize #T]
+                        [parent P2]))
+
+(define MS2 (new message% [label "F you"]
+                	[auto-resize #T]
+                        [parent hidden]))
+(define MS3 (new message% [label "F you"]
+                	[auto-resize #T]
+                        [parent hidden]))
+(define MS4 (new message% [label "F you"]
+                	[auto-resize #T]
+                        [parent hidden]))
+
+(define TF1 (new text-field% [label "generation size"]
+                [parent P2]
+                [init-value ""]))
+
+(define TF2 (new text-field% [label "ammout of moves to look ahead"]
+                [parent P2]
+                [init-value ""]))
+
+(define TF3 (new text-field% [label "number of iterations"]
+                [parent P2]
+                [init-value ""]))
+
+(define TF4 (new text-field% [label ""]
+                [parent hidden]
+                [init-value"number of iterations"]))
+
+(define TF5 (new text-field% [label ""]
+                [parent hidden]
+                [init-value"number of iterations"]))
+
+(define TF6 (new text-field% [label ""]
+                [parent hidden]
+                [init-value"number of iterations"]))
+
+(define (validInput? num1 num2 num3)
+  (cond
+    ((or (not (exact-positive-integer? num1))
+         (not (exact-nonnegative-integer?  num2))
+         (not (exact-positive-integer? num3))) #F)
+    (else #T)))
+
+(define (inputGeneticInfo)
+  
+;  (send MS2 set-label "generation size")
+;  (send MS3 set-label "ammout of moves to look ahead")
+;  (send MS4 set-label "number of iterations")
+  (let ([answer1 (send TF1 get-value)]
+        [answer2 (send TF2 get-value)]
+        [answer3 (send TF3 get-value)])
+        (cond
+          ((not (validInput? answer1 answer2 answer3)) (inputGeneticInfo))
+          (else (displayln "get get ready for a loooonnnggggg wait...") (newline)))))
+                ;(testGen (randomGen answer1)  answer2 answer3)))))
+
+(define BT1 (new button% [label "play"]
+                [parent P1]
+                [callback (lambda (a b) (send F1 delete-child P1)
+                            (send F1 add-child P2))]))
+
+
+(define BT2 (new button% [label "learn"]
+                 [parent P1]
+                 [callback (lambda (a b) (send F1 delete-child P1)
+                            (send F1 add-child P2)
+                             (send MS1 set-label "only positive integers are valid input"))]))
+
+(define BT3 (new button% [label "run"]
+                [parent P2]
+                [callback (lambda (a b) (let ([answer1 (string->number (send TF1 get-value))]
+                                              [answer2 (string->number (send TF2 get-value))]
+                                              [answer3 (string->number (send TF3 get-value))])
+                                          (cond
+                                            ((not (validInput? answer1 answer2 answer3)) (send MS1 set-label "check your input") (sleep 1)
+                                                                                         (send MS1 set-label "only positive integers are valid input"))
+                                            (else #|(testGen (randomGen answer1) answer2 answer3)|# (send MS1 set-label "ITS WORKING!")))))]))
+
+(define TF (new text-field% [label "first input"]
+                [parent hidden]
+                [init-value "type your name"]))
+
+(send F1 show #T)
 
 
