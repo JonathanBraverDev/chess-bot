@@ -1237,7 +1237,7 @@
 
 
 (close-viewport V1)
-(modePicker)
+;(modePicker)
   
 
 
@@ -1264,23 +1264,43 @@
                 [alignment '(left top)]
                 [parent F1]))
 
-(define hidden (new vertical-panel%
+(define P4 (new vertical-panel%
                 [style '(deleted)]
                 [parent F1]))
 
-(define MS1 (new message% [label "F you"]
+;opponent select
+(define MS2 (new message% [label "pick your opponent and search depth"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS3 (new message% [label "1. defult bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS4 (new message% [label "2. randomly generated bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS5 (new message% [label "3. genetic bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS6 (new message% [label "4. make your own bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define TF (new text-field% [label "choise"]
+                [parent P3]
+                [init-value ""]))
+
+(define TF11 (new text-field% [label "depth (max recomended is 2)"]
+                [parent P3]
+                [init-value "0"]))
+
+;genetic input
+(define MS1 (new message% [label "only positive integers are valid input"]
                 	[auto-resize #T]
                         [parent P2]))
-
-(define MS2 (new message% [label "F you"]
-                	[auto-resize #T]
-                        [parent hidden]))
-(define MS3 (new message% [label "F you"]
-                	[auto-resize #T]
-                        [parent hidden]))
-(define MS4 (new message% [label "F you"]
-                	[auto-resize #T]
-                        [parent hidden]))
 
 (define TF1 (new text-field% [label "generation size"]
                 [parent P2]
@@ -1294,30 +1314,50 @@
                 [parent P2]
                 [init-value ""]))
 
+;bot making
 (define TF4 (new text-field% [label ""]
-                [parent hidden]
-                [init-value"number of iterations"]))
+                [parent P4]
+                [init-value ""]))
 
 (define TF5 (new text-field% [label ""]
-                [parent hidden]
-                [init-value"number of iterations"]))
+                [parent P4]
+                [init-value ""]))
 
 (define TF6 (new text-field% [label ""]
-                [parent hidden]
-                [init-value"number of iterations"]))
+                [parent P4]
+                [init-value ""]))
 
+(define TF7 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
 
+(define TF8 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF9 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF10 (new text-field% [label "depth (max recomended is 2)"]
+                [parent P4]
+                [init-value "0"]))
+
+;main menu
 (define BT1 (new button% [label "play"]
                 [parent P1]
                 [callback (lambda (a b) (send F1 delete-child P1)
-                            (send F1 add-child P2))]))
+                            (send F1 add-child P3))]))
 
 
 (define BT2 (new button% [label "learn"]
                  [parent P1]
                  [callback (lambda (a b) (send F1 delete-child P1)
-                            (send F1 add-child P2)
-                             (send MS1 set-label "only positive integers are valid input"))]))
+                            (send F1 add-child P2) )]))
+
+(define BT0 (new button% [label "terminate"]
+                [parent P1]
+                [callback (lambda (a b) (send F1 show #F) (display "exiting...") (sleep 2.5) (exit))]))
 
 (define BT3 (new button% [label "run"]
                 [parent P2]
@@ -1329,10 +1369,18 @@
                                                                                          (send MS1 set-label "only positive integers are valid input"))
                                             (else (testGen (randomGen answer1) answer2 answer3)))))]))
 
-(define TF (new text-field% [label "first input"]
-                [parent hidden]
-                [init-value "type your name"]))
+(define BT4 (new button% [label "play/next"]
+                 [parent P3]
+                 [callback (lambda (a b) (let ([choise (string->number (send TF get-value))]
+                                               [depth (string->number (send TF11 get-value))])
+                                               (cond
+                                                 ((or (not (exact-positive-integer? choise)) (not (exact-nonnegative-integer? depth)) (> choise 4)) (send MS2 set-label "wrong input") (sleep 1)
+                                                                                                                                                    (send MS2 set-label "pick your opponent"))
+                                                 ((equal? choise 1) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters DB))))
+                                                 ((equal? choise 2) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters RB))))
+                                                 ((equal? choise 3) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters B7))))
+                                                  (else (send F1 delete-child P3)
+                                                        (send F1 add-child P4)))))])) 
 
 (send F1 show #T)
-
 
