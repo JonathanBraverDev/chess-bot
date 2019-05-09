@@ -1242,7 +1242,7 @@
 
 
 ;UI - its sooooooooooo bad
-define F1 (new frame% [label "menu"]
+(define F1 (new frame% [label "menu"]
                 [x 100]
                 [y 100]
                 [min-width 300]	 
