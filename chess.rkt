@@ -1386,12 +1386,9 @@
 
 (define BT5 (new button% [label "play"]
                 [parent P4]
-                [callback (lambda (a b) (let ([depth1 (string->number (send TF11 get-value))]
-                                              [depth2 (string->number (send TF10 get-value))]
+                [callback (lambda (a b) (let ([depth (send TF10 get-value)] ;take the most recent value
                                               [opponent (list (send TF4 get-value) (send TF5 get-value) (send TF6 get-value) (send TF7 get-value) (send TF8 get-value) (send TF9 get-value))])
-                                          (cond
-                                            ((not (equal? depth1 depth2)) (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth2 opponent))
-                                            (else (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth2 opponent)))))])) ;if the depth is dipperent, pick the new one
+                                          (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth opponent)))]))
 
 (send F1 show #T)
 
