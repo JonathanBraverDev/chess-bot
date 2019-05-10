@@ -1,8 +1,10 @@
 #lang racket
 (require racket/list)
 (require graphics/graphics)
+(require racket/gui/base)
+(require racket/format)
 
-(define-struct state (board score color parent #|kingAttacked?|#))
+(define-struct state (board score color parent))
 
 
 (define B1 '(("WR" "WH" "WB" "WK" "WQ" "WB" "WH" "WR")
@@ -14,14 +16,9 @@
              ("BP" "BP" "BP" "BP" "BP" "BP" "BP" "BP")
              ("BR" "BH" "BB" "BK" "BQ" "BB" "BH" "BR")))
 
-(define TST '(("WP" "--" "--" "--" "--" "--" "--" "WK")
-              ("BP" "--" "--" "--" "--" "--" "--" "--")
-              ("--" "--" "--" "--" "--" "--" "--" "--")
-              ("--" "--" "--" "--" "--" "--" "--" "--")
-              ("--" "--" "--" "--" "--" "--" "--" "--")
-              ("--" "--" "--" "--" "--" "--" "--" "--")
-              ("--" "WR" "--" "WR" "--" "--" "--" "WP")
-              ("--" "--" "--" "--" "BK" "--" "--" "--")))
+(define TST '(("WQ" "WK" "--")
+              ("--" "--" "--")
+              ("--" "BK" "BQ")))
 
 
 (define WK "WK")
@@ -39,7 +36,7 @@
 (define -- "--")
   
 (define bug (list (list WR WH WB -- WQ WK -- WR) ;B7 moved the BQ to (3,3)
-                  (list WP WP WP -- -- -- -- WP) ;and... yeahhhh not the best idea
+                  (list WP WP WP -- -- -- -- WP) 
                   (list -- -- -- -- -- WB -- --)
                   (list -- -- -- -- -- WP -- --)
                   (list -- -- -- BP -- -- -- --)
@@ -70,7 +67,7 @@
 
 ;movement
 
-;pawn section (its the only piece that gets one...)
+;pawn section
 (define (PawnPossibleBoards B Xpos Ypos [color (getColor B Xpos Ypos)]) ;returns boards
   (let ([side  (sideFinder color)])
     (cond
@@ -82,9 +79,7 @@
                                 (removeAllOccurrencesOf '()
                                                         (list (pawnMoves-regularKills B Xpos Ypos side)
                                                               (pawnMoves-startingLane B Xpos Ypos side color)  
-                                                              '()))))))))) ;more moves soon (ummmm NOPE XD)
-;need to add crowning, the only reason the game (yes... the one in which the kings are dead 10 turnds in...)
-;crashed is cuse a pawn gets to the last lane and tries to move the next turn, getting to index 8 (out of 7) and crashing
+                                                              '())))))))))
 
 (define (PawnPossibleMoves B Xpos Ypos [player #F] [color (getColor B Xpos Ypos)]) ;returns moves, and asks for input about crowning 'result'
   (let ([side  (sideFinder color)])     ;player will trigger the crown choise, else it's gonna just predict the move without crowning
@@ -125,17 +120,17 @@
 
 (define (pawnMoves-regualarMove B Xpos Ypos side)
   (cond
-    ((equal? (getTileAt B Xpos (+ Ypos side)) "--") (list Xpos (+ Ypos side))) ;WARNING! returns a 'single layered' list (so be carefull... it MAY fuckup someting... somehow)
+    ((equal? (getTileAt B Xpos (+ Ypos side)) "--") (list Xpos (+ Ypos side)))
     (else '()))) ;defult 'no new move here' output that will get filtered out
 
 (define (pawnMoves-startingLane B Xpos Ypos side [color (getColor B Xpos Ypos)]) 
   (cond                                    ;the 'side' inverts the movement of the pawn (its the color...)
     ((and (isOnStartingLane? Ypos color) (not (empty? (pawnMoves-regualarMove B Xpos Ypos side)))) (cons (pawnMoves-regualarMove B Xpos Ypos side)
                                                                                                          (list (pawnMoves-regualarMove B Xpos (+ Ypos side) side)))) ;i check if he can move at all and then add amove IF he can go 2 tiles
-    (else (pawnMoves-regualarMove B Xpos Ypos side)))) ;its just gonna do its own thing...
+    (else (pawnMoves-regualarMove B Xpos Ypos side))))
     
 
-(define (originLaneFinder color) ;ummm it just tells the Y of the starting lane
+(define (originLaneFinder color)
   (cond
     ((equal? color #\W) 1)
     (else 6)))
@@ -161,7 +156,7 @@
                           (moveAndTurnInto B originX originY ratgetX targetY #\B color)
                           (moveAndTurnInto B originX originY ratgetX targetY #\H color)) (Pawn-Crowning B Xpos Ypos color (rest L)))))))
 
-(define (crownChecker B Xpos Ypos color L) ;filteres out 'failed crownings' (pawn can't crown and the function cant handle that XD)
+(define (crownChecker B Xpos Ypos color L) ;filteres out 'failed crownings' (pawn can't crown and the function cant handle that)
   (cond
     ((empty? L) '())
     (else (Pawn-Crowning B Xpos Ypos color L))))
@@ -170,7 +165,7 @@
   (clearTileAt (updateBoard B ratgetX targetY (makePiece type color)) originX originY))
       
 
-(define (sideFinder color) ;again, its simple... (returns the DEFULT change in Y)
+(define (sideFinder color)
   (cond
     ((equal? color #\W) 1)
     (else -1)))
@@ -181,20 +176,12 @@
       ((and (legalTile? B (+ Xpos (first L)) (+ Ypos side)) (kill? B (+ Xpos (first L)) (+ Ypos side) color)) (append (list (+ Xpos (first L)) (+ Ypos side)) (pawnMoves-regularKills B Xpos Ypos side (rest L) color)))
       (else (pawnMoves-regularKills B Xpos Ypos side (rest L) color))))
 
-;regular move - 1 tile                                    DONE
-;kills 1 diagonal left or rigth from movement direction   DONE
-;first move - 2 tiles                                     DONE
-;capture during first move                                      some hard shit here, i need to save the last move
-;croned at the end of the board                           DONE
-
-
-;Knight movement ;WORKING
+;Knight movement
 (define (KnightPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
   (cons (list Xpos Ypos) (Knight-addPossibleMovesFromList B Xpos Ypos (list '(2 -1) '(-2 -1)
                                                                             '(2 1)  '(-2 1)
                                                                             '(1 -2) '(-1 -2)
                                                                             '(1 2)  '(-1 2)) color)))
-;it'll leave only the moves that (looking at the board after the move and finding no attack) protects the king, or his own moves
 
 (define (Knight-addPossibleMovesFromList B originX originY L originColor) ;list is moves relative to the origin location
   (cond                                                                    
@@ -203,33 +190,31 @@
     (else (cons (list (+ (first (first L)) originX) (+ (second (first L)) originY)) (Knight-addPossibleMovesFromList B originX originY (rest L) originColor)))))
 
 
-;rook movement (EZ) ;WORKING
+;rook movement
 (define (RookPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos) ;first enelemt is the origin location
         (flatten-lists
          (removeAllOccurrencesOf '()
                                  (let ([color (getColor B Xpos Ypos)])
-                                   (list (lookDir B Xpos Ypos color 0 1) ;will run defult (down)
+                                   (list (lookDir B Xpos Ypos color 0 1) ;down
                                          (lookDir B Xpos Ypos color 0 -1) ;up
                                          (lookDir B Xpos Ypos color 1 0) ;right
                                          (lookDir B Xpos Ypos color -1 0))))))) ;left
 
-;casteling       gonna be a b**** (and idk if i'll bother)
 
-
-;bishop movement (EZ) ;WORKING
+;bishop movement
 (define (BishopPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos) ;first enelemt is the origin location
         (flatten-lists
          (removeAllOccurrencesOf '()
                                  (let ([color (getColor B Xpos Ypos)])
-                                   (list (lookDir B Xpos Ypos color 1 1) ;defult (bottom right)
+                                   (list (lookDir B Xpos Ypos color 1 1) ;bottom right
                                          (lookDir B Xpos Ypos color 1 -1) ;upper right
                                          (lookDir B Xpos Ypos color -1 1) ;bottom left
                                          (lookDir B Xpos Ypos color -1 -1))))))) ;upper left
 
 
-;queen movement (SOOOO EZ) ;WORKING
+;queen movement
 (define (QueenPossibleMoves B Xpos Ypos)
   (cons (list Xpos Ypos)
         (removeAllOccurrencesOf '() (append (rest (RookPossibleMoves B Xpos Ypos))
@@ -238,7 +223,7 @@
 ;king movement
 (define (KingPossibleMoves B Xpos Ypos [color (getColor B Xpos Ypos)])
   (cons (list Xpos Ypos)
-        (King-addPossibleMovesFromList B Xpos Ypos color))) ;to get the king out of the way of potential attackers
+        (King-addPossibleMovesFromList B Xpos Ypos color)))
                                         
 
 (define (King-addPossibleMovesFromList B originX originY color [L (list '(1 -1) '(1 0) '(1 1) '(0 1) '(0 -1) '(-1 -1) '(-1 0) '(-1 1))])
@@ -265,7 +250,7 @@
 
 (define (friendlyTile? B Xpos Ypos color) ;color of origin piece, xy of target
   (cond
-    ((equal? color (getColor B Xpos Ypos)) #T) ;ummmm MAYbe pointless?...
+    ((equal? color (getColor B Xpos Ypos)) #T)
     (else #F)))
 
 (define (legalTile? B Xpos Ypos)
@@ -301,7 +286,7 @@
 (define (printState state)
   (printBoard (state-board state))
   (println (state-score state))
-  (println (state-color state))) ;printint the parent is kinda pointless
+  (println (state-color state)))
 
 (define (printAllStates states)
   (cond
@@ -338,14 +323,13 @@
 (define (PVP B [color #\W])
   (cond
     ((win? B color) (print (invertColor color)) (display " ") (displayln "won") (newline))
-    ;((empty? (filterChecked B color)) (displayln "stalemate") (newline))
     (else
      (cond
        ((equal? color #\W) (displayln "white's turn"))
        (else (displayln "black's turn")))
      (PVP (selectTile B color) (invertColor color)))))
 
-(define (selectTile B [color #\W]) ;will be graphical later, but still use the same core so it's ok
+(define (selectTile B [color #\W])
   (printBoard B)
   (displayln "enter X of tile (up to 7)")
   (let ([Xpos (read)])
@@ -358,9 +342,9 @@
   (cond
     ((win? B color #T) (print color) (winMassage V color))
     (else
-     ;(cond
-     ; ((equal? color #\W) (displayln "white's turn"))
-     ; (else (displayln "black's turn")))
+     #| (cond ;printing
+       ((equal? color #\W) (displayln "white's turn"))
+       (else (displayln "black's turn"))) |#
      (cond
        (human (let ([newPlayerB (selectPiece V B color)])
                 (clearGraphicBoard V B)
@@ -369,14 +353,13 @@
                (clearGraphicBoard V B)
                (PVE depth prameters newB V (invertColor color) (invertPlayer human))))))))
 
-(define (EVE [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))]) ;its a completly random bot duel to the crash!
+(define (EVE [B B1] [depth 2] [color #\W] [turnCounter 1] [turnsToTie 50] [lastPieceCount (+ (length (findAllColor B w)) (length (findAllColor B b)))])
   (printBoard B)
   (println (scoreForBoard B color))
   (cond
     ((= turnsToTie 0) (displayln "stalemate") (newline))
     ((win? B color #T) (print (invertColor color)) (display " ") (displayln "won") (newline))
-    ;((empty? (filterChecked B color)) (displayln "stalemate") (newline))
-    (else                          ;its sooo bad
+    (else
      (println (attackedKing? B color)) ;printing check
      (display "turn ") (println turnCounter)
      (cond
@@ -394,9 +377,9 @@
 (define (findKing B color)
   (searchForPiece B (makePiece #\K color)))
 
-(define (searchForPiece B [target (makePiece #\K #\W)] [Xpos 0] [Ypos 0]) ;the same, but stops after finding one king (i can change the original buttttt later)
+(define (searchForPiece B [target (makePiece #\K #\W)] [Xpos 0] [Ypos 0]) 
   (cond
-    ((= Ypos (length B)) '()) ;can cause problems... but maybe not... i'm filtereint these out on every function (and the random game was fine...)
+    ((= Ypos (length B)) '())
     ((= Xpos (length (first B))) (searchForPiece B target 0 (add1 Ypos)))
     ((equal? (getTileAt B Xpos Ypos) target) (list Xpos Ypos))
     (else (searchForPiece B target (add1 Xpos) Ypos))))
@@ -413,7 +396,7 @@
   (list (findAllColor B #\W)
         (findAllColor B #\B)))
 
-(define (findAllType B type [Xpos 0] [Ypos 0]) ;its soooooooo similar to findAllColor, only 1 word change (easy fix, but not now)
+(define (findAllType B type [Xpos 0] [Ypos 0])
   (cond
     ((= Ypos (length B)) '())
     ((= Xpos (length (first B))) (findAllType B type 0 (add1 Ypos)))
@@ -454,20 +437,19 @@
       ((= (length (findAllColor B enemyColor)) 1) #T) ;i'm tired from stalmates, the better killer will win
       (else #F))))
 
-;abit tooooo agressive about putting games down
-(define (draw? B color) ;I may have missed someting, and every option is a new line ro make it easier to read and understand (so its not a page-long or)
+;abit too agressive about putting games down
+(define (draw? B color)
   (cond
-    ;((and (not (attackedKing? B color)) (empty? (filterChecked B color))) #T) ;no moves, king NOT under attack
-    ((and (= (length (findAllColor B #\W)) 1) (= (length (findAllColor B #\B)) 1)) #T) ;only kings left (i need to disallow killing the king for that to work properly (done))
+    ((and (= (length (findAllColor B #\W)) 1) (= (length (findAllColor B #\B)) 1)) #T) ;only kings left
     ((and (= (+ (length (findAllColor B #\B)) (length (findAllColor B #\W))) 3) (or (findAllType B #\B)       ;king + bishop VS king (there is a similar thing with multiple bishpps on the same color)
                                                                                     (findAllType B #\H))) #T) ;king + knight VS king
-    (else #F))) ;i think it's everyting... ignoring (just for now) the multiplu same colored bishops
+    (else #F)))
 ;and the 3 repetitions of the same state - i need this for bots, they can get stuck in a 'checkNblock' sycle
 ;and the 50 moves without kills, but i belive it wont happen... plus i've banned most of the endgame causes (but a rook or a queen can play badly and fail to win in 50 turns)
 
  ;draw conditions
 (define (onlyKingsLeft? B) ;king duel
-  ((= (length (findAllPieces B)) (length #|just to be sure|# (findAllType #\K B)) 2) #T))
+  ((= (length (findAllPieces B)) (length (findAllType #\K B)) 2) #T))
 
 (define (3TimesRepetition state) ;3 times the same board
   (let ([sameBoards (repetitionCheck (state-board state) state)])
@@ -483,7 +465,7 @@
       (else (3TimesRepetition B state counter (sub1 limit))))))
 
 ;general use
-(define (attackedKing? B color) ;makes the bot crash when the king is killed in the 
+(define (attackedKing? B color)
   (let ([kingPos (findKing B color)])
     (cond
       ((threatenedTile? B (first kingPos) (second kingPos)) #T)
@@ -499,7 +481,7 @@
   (clearTileAt (updateBoard B Xtarget Ytarget (getTileAt B Xorigin Yorigin)) Xorigin Yorigin))
 
 (define (flatten-lists L)
-  (pairify (flatten L))) ;not my naming idea...
+  (pairify (flatten L)))
 
 (define (pairify L) ;the length of the list is always devisible by 2 (each list contains 2 numbers)
   (cond
@@ -528,7 +510,7 @@
     ((and (> num (sub1 start)) (< num (add1 end))) #T)
     (else #F)))
 
-(define (round* num) ;just to get rid of the 0.99999999999999999 (you know what i'm talking about...)
+(define (round* num) ;just to get rid of the 0.99999999999999999
   (/ (floor (* 100 num)) 100))
 
 (define (insertToEnd item list)
@@ -551,7 +533,6 @@
   (let ([L2 (vector->list (build-vector (length L) add1))])
     (combinations (map (lambda (x) (sub1 x)) L2) size)))
 
-;reworked (ummmmmmm just the giant pile of new code I added)
 (define (boardsOfAllMoves B L [originX (first (first L))] [originY (second (first L))]) ;L is an output of the possibleMoves functions, of format ((originX originY) (targetX targetY)....)
   (let ([targetX (first (second L))]                                                    ;RETURNS the final BOARD of every move
         [targetY (second (second L))]
@@ -596,7 +577,7 @@
     ((equal? target #\K) (filterMovelessPieces B (KingPossibleMoves B Xpos Ypos)))
     (else '())))
 
-(define (filterMovelessPieces B L) ;just a buffer between 'boardsOfAllMoves' and deadly input (but no JK, it stops it from crushing...)
+(define (filterMovelessPieces B L) ;just a buffer between 'boardsOfAllMoves' and deadly input
   (cond
     ((empty? (rest L)) '())
     (else (boardsOfAllMoves B L))))
@@ -628,14 +609,14 @@
   (empty? (findAllType B #\D)))
 
 
-(define (moveOptions B Xpos Ypos color) ;color is the current player (this function gets called by 'selectTile' in the 'main' section)
+(define (moveOptions B Xpos Ypos color) ;color is the current player
   (cond
     ((not (equal? (getColor B Xpos Ypos) color)) (displayln "pick your own piece") (newline) (selectTile B color))
     (else (selectMove B (possibleMovesForTile B Xpos Ypos) color))))
 
 
-(define (selectMove B movesL color) ;movesL is a LIST of MOVES (hummmm i'll need a spesial function for the pawn... later)
-  (cond                             ;WILL NOT WORK on pawns about to crown, yet
+(define (selectMove B movesL color) ;movesL is a LIST of MOVES
+  (cond
     ((empty? (rest movesL)) (display "can't move, ") (reasonGiver B color) (newline) (selectTile B color))
     (else
      (let ([originX (first (first movesL))]
@@ -646,7 +627,7 @@
        (let ([moveIndex (add1 (read))]) ;to skip origin location (minimum index is 1)
          (moveTo B originX originY (first (list-ref movesL moveIndex)) (second (list-ref movesL moveIndex))))))))
 
-(define (reasonGiver B color) ;just some more info, will later be replaced with text displayed in the game window
+(define (reasonGiver B color) ;just some more info
   (cond
     ((attackedKing? B color) (displayln "the king is under attack"))
     (else (displayln "all moves are blocked"))))
@@ -673,13 +654,12 @@
 (define swampBonus 0.9)
 (define kingBase 0)
 (define checkBonus 3)
-;maybe i'll add 'controlled area' that will count the total tiles a color can move to (including attacks... so basicly all possible moves)
-;               'enamy cheched' a set bonus on attaking the king
 
-(define defultValues (list mountaintopBonus hillsBonus vallyBonus swampBonus kingBase checkBonus #|more values|#))
-;order of parameters for 'basic' scoring (advanced is someting like 'controlled area')
 
-(define (scoreForBoard B color [start #T] [parameters defultValues]) ;returns a score for the given board, both colors return the sane score (only difference being -/+inf.0 from the win condition)
+(define defultValues (list mountaintopBonus hillsBonus vallyBonus swampBonus kingBase checkBonus))
+;order of parameters for 'basic' scoring
+
+(define (scoreForBoard B color [start #F] [parameters defultValues]) ;returns a score for the given board, both colors return the same score
   (let ([winResult (winCheck B color start)])
     (cond
       (winResult winResult)
@@ -691,7 +671,7 @@
     ((attackedKing? B (invertColor color)) (sixth parameters))
     (else 0)))
   
-(define (winCheck B color [start #T]) ;rerurns a score of -inf.0, +ilf.0 or #F if no win
+(define (winCheck B color [start #F]) ;rerurns a score of -inf.0, +inf.0 or #F if no win
   (cond
     ((win? B color start) (winValue color))
     (else #F)))
@@ -712,17 +692,16 @@
         [pieceY (second (first pieces))])
   (cond
     ((empty? (rest pieces)) (giveValueToPiece B pieceX pieceY parameters))
-    (else (+ #| new scoring goes here |# (giveValueToPiece B pieceX pieceY parameters) (calcScore B color (rest pieces) parameters))))))
+    (else (+ (giveValueToPiece B pieceX pieceY parameters) (calcScore B color (rest pieces) parameters))))))
 
 
 (define (giveValueToPiece B pieceX pieceY [parameters defultValues])
   (let ([type (getType B pieceX pieceY)])
     (cond
-;      ((equal? type #\K) (fifth parameters)) ;trying someting... no idea what's better
       ((isInHilltop? (list pieceX pieceY)) (* (baseValue type parameters) (first parameters)))
       ((isInHills? pieceX pieceY) (* (baseValue type parameters) (second parameters)))
       ((isInVally? pieceX pieceY) (* (baseValue type parameters) (third parameters)))
-      (else (* (baseValue type parameters) (fourth parameters)))))) ;ummm everyting else is in the swamp
+      (else (* (baseValue type parameters) (fourth parameters)))))) ;everyting else is in the swamp
 
 (define (baseValue type parameters)
   (cond
@@ -731,7 +710,7 @@
     ((equal? type #\H) 3)
     ((equal? type #\R) 5)
     ((equal? type #\Q) 9)
-    (else (fifth parameters)))) ;king will go here (theoreticly... that function is never run on him)
+    (else (fifth parameters)))) ;king will go here
 
 (define (isInHilltop? XYpos [L (list '(3 3) '(3 4) '(4 3) '(4 4))])
   (cond
@@ -763,8 +742,8 @@
     (else (cons (make-state (first L) 0 (invertColor color) parent) (allMovesToStates parent color (rest L))))))
                                      ;the score is calculated only at max depth
 
-       ;SB => State (from) Board (im lazy ;))
-(define (SB B [color w] [parent 'none]) ;just converts aboard to a state
+       ;SB => State (from) Board
+(define (SB B [color w] [parent 'none]) ;converts aboard to a state
   (make-state B (scoreForBoard B color #T) color parent))
 
 (define (calcScoreForList L [parameters defultValues]) ;L is a list of states
@@ -783,7 +762,7 @@
     (KingPossibleMoves B (first kingPos) (second kingPos))))
 
 
-;minimax ;need optimazing so it wont save all the states at once
+;minimax
 (define (lazyMinMax depth [state start] [parameters defultValues] [L (allStatesToDepth depth state parameters)])
   ;(println (length L)) ;just printing the ammout of states calculated in each level
   (cond
@@ -797,12 +776,11 @@
     ((= depth 0) state)
     (else (traceBack (first (tstfunction depth (allMovesToStates state))) (sub1 depth)))))
   
-                         ;nextGen shuld help....
-(define (tstfunction depth open #| nextGen |# [state (first open)]) ;open is (allMovesToStates state)
+(define (tstfunction depth open [state (first open)]) ;open is (allMovesToStates state)
   (print (length open)) (display " ") (println depth)
   (cond
     ((= depth 1) (list (min\max (calcScoreForList open)))) ;to make it always return a list with one state
-    ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state)))) ;the first line is more likly so... preformance boost
+    ((empty? (rest open)) (list (tstfunction (sub1 depth) (allMovesToStates state))))
     (else (list (bestOftwo (flatten (cons (first (tstfunction (sub1 depth) (allMovesToStates state))) ;returns the best states
                                           (tstfunction depth (rest open)))))))))
 
@@ -812,7 +790,7 @@
   (let ([color (state-color (first L))]) ;its the next color, so the player making the move had it inverted
     (let ([sortedL (sort L (lambda (a b) (> (state-score a) (state-score b))))])
     (cond
-      ((= (state-score (first sortedL)) (state-score (second sortedL))) (randomIndexFrom sortedL)) ;making it more fun ;)
+      ((= (state-score (first sortedL)) (state-score (second sortedL))) (randomIndexFrom sortedL))
       ((equal? color #\B) (second sortedL))
       (else (first L))))))
 
@@ -831,11 +809,11 @@
       
       (make-state parentBoard miniMaxedScore parentColor grandParent))))
 
-;needs to be outed
+
 (define (allStatesToDepth depth [state start] [parameters defultValues])
   (map (lambda (states) (calcScoreForList states parameters)) (group-by (lambda (state) (state-parent state)) (developAllMoves depth (allMovesToStates state))))) ;returns groups of ALL final moves up to the given depth
 
-;needs to be outed
+
 (define (developAllMoves depth [L (allMovesToStates state)])
   (cond
     ((= depth 0) L)
@@ -871,13 +849,13 @@
 (define (newBot paremeter) ;to avoid all the zeros needed to make a proper bot
   (make-bot paremeter 0 0))
 
-(define (resetBot bot) ;cleans the record of the bot (in other words it makes anew bot with the same parameters but wothout the winCouner or fitness)
+(define (resetBot bot) ;cleans the record of the bot
   (newBot (bot-parameters bot)))
 
 (define (breedNextGen botL [bots (updateMateChance botL)] [toBreed (length botL)] [mutationchance 0.3])
   (cond                                                                           ;mutationchance*100 = percentage of mutated offspring
     ((= toBreed 0) '())
-    ((onlyOneWon? bots) (list (resetBot (list-ref bots (indexOfFitness bots 1))) (randomGen (- (length bots) 2)))) ;so the next gen will actually be usefull.....
+    ((onlyOneWon? bots) (list (resetBot (list-ref bots (indexOfFitness bots 1))) (randomGen (- (length bots) 2)))) ;so the next gen will actually be usefull
     (else (cons (mutate (mate (pickParent bots) (pickParent bots)) mutationchance) (breedNextGen botL bots (sub1 toBreed))))))
 
 (define (indexOfFitness botL value) ;returns the index of the first bot with the given fitness
@@ -886,7 +864,6 @@
     (else (add1 (indexOfFitness (rest botL) value)))))
 
 (define (pickParent botL [sum 0] [RND (random)]) ;needs a 'fitted' (with fitness) list of bots
-  ;(println botL)
   (let ([newSum (+ sum (bot-fitness (first botL)))])
     (cond
       ((or (> newSum RND) (= newSum RND)) (first botL))
@@ -904,7 +881,7 @@
     (else (cons (newRandomBot) (randomGen (sub1 size))))))
 
 (define (newRandomBot)
-  (newBot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10)))) ;just... random but it a range that makes sence
+  (newBot (list (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10) (random -10 10))))
 
 (define (mutate bot mutationchance [RND (random)]) ;changes one parameter of the bot by a random percentage from 50 to 150
   (cond
@@ -913,7 +890,7 @@
      (let ([mutationIndex (random (length (bot-parameters bot)))])
        (newBot (append (take (bot-parameters bot) mutationIndex) (list (round* (* (list-ref (bot-parameters bot) mutationIndex) (/ (random 50 150) 100)))) (drop (bot-parameters bot) (add1 mutationIndex))))))))
 
-;kinda bot sex
+;mating
 (define (mate bot1 bot2)
   (let ([parameters1 (bot-parameters bot1)]
         [parameters2 (bot-parameters bot2)])
@@ -930,9 +907,6 @@
 ;fitness
 (define (updateMateChance botL) ;a list of bots, with scores
   (let ([maxWins (sub1 (length botL))])
-    ;(println (length botL))
-    ;(println maxWins)
-    ;(newline)
     (normalizeFitness (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-winCounter bot) maxWins))) botL))))
 
 (define (normalizeFitness botL) ;changes the fitness to be a ratio so the total is always 1
@@ -940,7 +914,7 @@
     (map (lambda (bot) (make-bot (bot-parameters bot) (bot-winCounter bot) (/ (bot-fitness bot) totalScore))) botL)))
 
 ;bot duels (and full gen match list)
-(define (testGen botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;a fancy list check
+(define (testGen botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;list check
     (cond
       ((empty? combinationL) (displayln "comraring best bot") (compareBotToDefult (findBestBot botL) depth) (displayln "generating new bots") (testGen (breedNextGen botL) depth (sub1 cycles)))
       (else (round botL depth cycles combinationL))))
@@ -954,7 +928,7 @@
     (else (compareBotToDefult bot depth (sub1 games) (+ wins (first (match bot DB depth))) totalGames))))
 
        
-(define (round botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)]) ;i need indexses
+(define (round botL [depth 2] [cycles 5] [combinationL (combinations* botL 2)])
   (let ([index1 (first (first combinationL))]
         [index2 (second (first combinationL))])
     (let ([bot1 (list-ref botL index1)]
@@ -996,7 +970,7 @@
     ((= turnsToTie 0) (resultPrinter 0 turnCounter) -1) ;tie code
     ((win? B #\W) (resultPrinter 1 turnCounter #\W) 0)
     ((win? B #\B) (resultPrinter 1 turnCounter #\B) 1) ;I need to know who won
-    (else                          ;its sooo bad
+    (else
     #| (display "turn ") (println turnCounter) ;printing
      (cond
        ((equal? color #\W) (displayln "white's turn"))
@@ -1036,17 +1010,6 @@
     (else (runGames bot1 bot2 depth (sub1 matches) (cons (match bot1 bot2 depth) results) totalGames))))
 
 
-;random shit
-(define (crazyMyltiplay [L1 '(1 2 3)] [L2 '(1 2 3 4)])
-  (map (lambda (L) (map (lambda (x) (* L x)) L1)) L2))
-
-(define (CT [L '(1 2 3 4 5 6 7 8 9 10)]) ;CT - Consept Test
-  (cond
-    ((empty? (rest L)) (list (list (first L) (* 2 (first L)))))
-    (else (cons (list (first L) (* 2 (first L)))
-                (CT (rest L))))))
-
-
 ;graphics
 (open-graphics)
 (define V1 (open-viewport "V1" 428 468))
@@ -1060,9 +1023,9 @@
 
 (define (drawBoard V)
   
-  (colorTiles V) ;coloring before so its wont delete lines
+  (colorTiles V) ;coloring before so it won’t delete lines
 
-  ;vertical lines (no function... yet (or forever) maybe i'll add someting that takes the size of the board and scales but not now)
+  ;vertical lines
   ((draw-line V) (make-posn 10 50) (make-posn 10 458))
   ((draw-line V) (make-posn 61 50) (make-posn 61 458))
   ((draw-line V) (make-posn 112 50) (make-posn 112 458))
@@ -1074,8 +1037,8 @@
   ((draw-line V) (make-posn 418 50) (make-posn 418 458))
   
   ;horizontal lines
-  ((draw-line V) (make-posn 10 50) (make-posn 418 50)) ;very interesting... all the lines are gray, i like it, easier to look at
-  ((draw-line V) (make-posn 10 101) (make-posn 418 101)) ;but if you cnage one to black all the next ones change too, like it saves the last color
+  ((draw-line V) (make-posn 10 50) (make-posn 418 50)) 
+  ((draw-line V) (make-posn 10 101) (make-posn 418 101))
   ((draw-line V) (make-posn 10 152) (make-posn 418 152))
   ((draw-line V) (make-posn 10 203) (make-posn 418 203))
   ((draw-line V) (make-posn 10 254) (make-posn 418 254))
@@ -1084,16 +1047,7 @@
   ((draw-line V) (make-posn 10 407) (make-posn 418 407))
   ((draw-line V) (make-posn 10 458) (make-posn 418 458)))
 
-#| all tiles to color (indexes (inverted...oppssssss shit (hehe...))
-   01,03,05,07
-   10,12,14,16
-   21,23,25,27
-   30,32,34,36
-   41,43,45,47
-   50,52,54,56
-   61,63,65,67
-   70,72,74,76
-|#
+
 
 (define (colorTiles V [Xpos 1] [Ypos 0] [nextX 0] [nextY 1]) ;the nexts are the coordinates of the first tile in the next line that nedds to be colored
   (let ([Gx (+ 10 (* Xpos 51))]  ;graphic X
@@ -1111,7 +1065,7 @@
 
 (define (boardPosToGraphicsPos Xpos Ypos)
   (make-posn (+ 20 (+ 10 (* Xpos 51))) (+ 20 (+ 61 (* Ypos 51)))))
-;to senter i take the 'base number to senter in a 51*51 space' (20 (letter size is 11*11))
+;to center i take the 'base number to senter in a 51*51 space' (20 (letter size is 11*11))
 ;then the start of the lines (10 and 61)
 ;and finally the offset by the nember of tiles (0 - 7 workes perfectly)
 
@@ -1147,19 +1101,19 @@
 (define (clearMassage V massage)
   ((clear-string V) (make-posn 10 40) massage))
 
-(define (sayAndClear V massage) ;loud and clear ;)
+(define (sayAndClear V massage)
   (displayMassage V massage)
   (sleep 1)
   (clearMassage V  massage))
 
 (define (winMassage V color) ;the color that won, not the color of the text
   (cond
-    ((equal? color #\W) (displayMassage V "Blue won")) ;white
-    (else (displayMassage V "Red won")))) ;black
+    ((equal? color #\W) (displayMassage V "White won"))
+    (else (displayMassage V "Black won"))))
 
 ;move selection (G)
 (define (selectPiece V B playerColor)
-  (displayMassage V "click a piece to move:") ;im to lazy to add an undo, not that its hard... but nahhhh
+  (displayMassage V "click a piece to move:")
   (let ([selectedTile (clickToboardPos V)])
     (cond
       ((not (equal? (getColor B (first selectedTile) (second selectedTile)) playerColor)) (clearMassage V  "click a piece to move: (you can't undo so be careful)")
@@ -1176,7 +1130,7 @@
     (cond
       ((equal? selectedTile movingPiece) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
                                          (sayAndClear V  "back to selection...")
-                                         (wipeTile V) (selectPiece V B playerColor)) ;ok... here it is (back to selection)
+                                         (wipeTile V) (selectPiece V B playerColor))
       ((not (isIn? (possibleMovesForTile B (first movingPiece) (second movingPiece)) selectedTile)) (clearMassage V "click the destination: (or on the piece you selected to pick again)")
                                                                                                     (sayAndClear V  "can't go there...")
                                                                                                     (pickTarget movingPiece V B playerColor))
@@ -1186,7 +1140,7 @@
                           
 ;startup
 (define (play [depth 2] [parameters defultValues])
-  (define V2 (open-viewport "V1" 428 468))
+  (define V2 (open-viewport "PvE board" 428 468))
   (drawBoard V2)
   (PVE depth parameters B1 V2))
 
@@ -1199,94 +1153,164 @@
 
 (define B7 (newBot '(-2 0 -7 -53/5 7 -8))) ;70% bot
 
-;main
-(define (modePicker)
-  (displayln "pick a mode to use:")
-  (displayln "1. run genetic algorithem")
-  (displayln "2. play aginst a bot")
-  (displayln "3. terminate")
-  (let ([answer (read)])
-    (cond
-      ((not (number? answer)) (displayln "wrong input, please try again") (newline) (modePicker))
-      ((= answer 1) (newline) (inputGeneticInfo))
-      ((= answer 2) (newline) (inputPvEInfo))
-      ((= answer 3) (display "goodbye"))
-      (else (displayln "wrong input, please try again") (newline) (modePicker)))))
+(close-viewport V1)
+  
 
-(define (inputGeneticInfo)
-  (displayln "type in the generation size (5 and up is NOT recomended)")
-  (let ([answer1 (read)])
-    (displayln "type in the ammout of moves to look ahead (0 is just minimax from the avalible moves)")
-    (let ([answer2 (read)])
-      (displayln "type in the number of iterations size (5 and up is NOT recomended)")
-      (let ([answer3 (read)])
-        (cond
-          ((not (validInput? answer1 answer2 answer3)) (displayln "only positive integers are valid input") (newline) (inputGeneticInfo))
-          (else (displayln "not get ready for a loooonnnggggg wait...") (newline)
-                (testGen (randomGen answer1)  answer2 answer3)))))))
-
+;UI
 (define (validInput? num1 num2 num3)
   (cond
-    ((or (not (exact-positive-integer? num1))
+    ((or (or (not (exact-positive-integer? num1)) (not (> 1 num1)))
          (not (exact-nonnegative-integer?  num2))
          (not (exact-positive-integer? num3))) #F)
     (else #T)))
 
-(define (inputPvEInfo)
-  (displayln "pick a pre-made bot or make your own:")
-  (displayln "1. defult bot")
-  (displayln "2. randomly generated bot")
-  (displayln "3. best bot so far from the genetic algorithem (70% win rate)")
-  (displayln "4. make your own bot")
-  (let ([answer (read)])
-    (cond
-      ((not (number? answer)) (displayln "wrong input, please try again") (newline) (inputPvEInfo))
-      ((= answer 1) (pickDepth (bot-parameters DB)))
-      ((= answer 2) (display "you will be playing aginst ") (displayln (bot-parameters RB))
-                    (pickDepth (bot-parameters RB)))
-      ((= answer 3) (pickDepth (bot-parameters B7)))
-      ((= answer 4) (makeYourBot))
-      (else (displayln "wrong input, please try again") (newline) (inputPvEInfo)))))
+(define F1 (new frame% [label "menu"]
+                [x 650]
+                [y 350]
+                [min-width 300]	 
+                [min-height 175]
+                [stretchable-width #F]	 
+                [stretchable-height #F]))
 
-(define (makeYourBot)
-  (displayln "enter the parameters you wish to play against in order (the numbers can be negavive, fractions, all you like)")
-  (displayln "first")
-  (let ([parameter1 (read)])
-    (displayln "second")
-    (let ([parameter2 (read)])
-       (displayln "third")
-      (let ([parameter3 (read)])
-        (displayln "forth")
-        (let ([parameter4 (read)])
-          (displayln "fifth")
-          (let ([parameter5 (read)])
-            (displayln "last one")
-            (let ([parameter6 (read)])
-            (cond
-              ((or (not (number? parameter1))
-                   (not (number? parameter2))
-                   (not (number? parameter3))
-                   (not (number? parameter4))
-                   (not (number? parameter5))
-                   (not (number? parameter6))) (displayln "only numbers are valid input") (newline) (makeYourBot))
-              (else (pickDepth (list parameter1 parameter2 parameter3 parameter4 parameter5 parameter6)))))))))))
-            
+(define P1 (new vertical-panel%
+               [alignment '(center center)]
+                [parent F1]))
 
-(define (pickDepth [parameters defultValues])
-  (displayln "pick the ammout of moves to look ahead (0 is just minimax from the avalible moves)")
-  (displayln "anything above 2 is NOT reconemded")
-  (displayln "(you will be palying as the blue pieces)")
-  (let ([answer (read)])
-    (cond
-      ((not (exact-nonnegative-integer? answer)) (displayln "only integers from 0 and up are valid") (newline) (pickDepth parameters))
-      (else (play answer parameters)))))
-#|  
-;UI
+(define P2 (new vertical-panel%
+                [style '(deleted)]
+                [alignment '(left top)]
+                [parent F1]))
 
-;proper UI later
+(define P3 (new vertical-panel%
+                [style '(deleted)]
+                [alignment '(left top)]
+                [parent F1]))
 
-|#
+(define P4 (new vertical-panel%
+                [style '(deleted)]
+                [parent F1]))
 
-(close-viewport V1)
-(modePicker)
-  
+;opponent select
+(define MS2 (new message% [label "pick your opponent and search depth"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS3 (new message% [label "1. defult bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS4 (new message% [label "2. randomly generated bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS5 (new message% [label "3. genetic bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define MS6 (new message% [label "4. make your own bot"]
+                	[auto-resize #T]
+                        [parent P3]))
+
+(define TF (new text-field% [label "choise"]
+                [parent P3]
+                [init-value ""]))
+
+(define TF11 (new text-field% [label "depth (max recomended is 2)"]
+                [parent P3]
+                [init-value "0"]))
+
+;genetic input
+(define MS1 (new message% [label "integers are valid input"]
+                	[auto-resize #T]
+                        [parent P2]))
+
+(define TF1 (new text-field% [label "generation size (min is 2)"]
+                [parent P2]
+                [init-value ""]))
+
+(define TF2 (new text-field% [label "ammout of moves to look ahead (0 and up)"]
+                [parent P2]
+                [init-value ""]))
+
+(define TF3 (new text-field% [label "number of iterations"]
+                [parent P2]
+                [init-value ""]))
+
+;bot making
+(define TF4 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF5 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF6 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF7 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF8 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF9 (new text-field% [label ""]
+                [parent P4]
+                [init-value ""]))
+
+(define TF10 (new text-field% [label "depth (max recomended is 2)"]
+                [parent P4]
+                [init-value "0"]))
+
+;main menu
+(define BT1 (new button% [label "play"]
+                [parent P1]
+                [callback (lambda (a b) (send F1 delete-child P1)
+                            (send F1 add-child P3))]))
+
+
+(define BT2 (new button% [label "learn"]
+                 [parent P1]
+                 [callback (lambda (a b) (send F1 delete-child P1)
+                            (send F1 add-child P2) )]))
+
+(define BT0 (new button% [label "terminate"]
+                [parent P1]
+                [callback (lambda (a b) (send F1 show #F) (display "exiting...") (sleep 2.5) (exit))]))
+
+(define BT3 (new button% [label "run"]
+                [parent P2]
+                [callback (lambda (a b) (let ([answer1 (string->number (send TF1 get-value))]
+                                              [answer2 (string->number (send TF2 get-value))]
+                                              [answer3 (string->number (send TF3 get-value))])
+                                          (cond
+                                            ((not (validInput? answer1 answer2 answer3)) (send MS1 set-label "check your input") (sleep 1)
+                                                                                         (send MS1 set-label "only positive integers are valid input"))
+                                            (else (testGen (randomGen answer1) answer2 answer3)))))]))
+
+(define BT4 (new button% [label "play/next"]
+                 [parent P3]
+                 [callback (lambda (a b) (let ([choise (string->number (send TF get-value))]
+                                               [depth (string->number (send TF11 get-value))])
+                                               (cond
+                                                 ((or (not (exact-positive-integer? choise)) (not (exact-nonnegative-integer? depth)) (> choise 4)) (send MS2 set-label "wrong input") (sleep 1)
+                                                                                                                                                    (send MS2 set-label "pick your opponent"))
+                                                 ((equal? choise 1) (send F1 show #F) (display "playing VS: ") (displayln (bot-parameters DB)) (play depth (bot-parameters DB)))
+                                                 ((equal? choise 2) (send F1 show #F) (let ([opponent (bot-parameters RB)])
+                                                                                        (display "playing VS: ") (displayln opponent)
+                                                                                        (play depth opponent)))
+                                                 ((equal? choise 3) (send F1 show #F) (display "playing VS: ") (displayln (bot-parameters B7)) (play depth (bot-parameters B7)))
+                                                  (else (send F1 delete-child P3)
+                                                        (send F1 add-child P4)))))]))
+
+(define BT5 (new button% [label "play"]
+                [parent P4]
+                [callback (lambda (a b) (let ([depth (send TF10 get-value)] ;take the most recent value
+                                              [opponent (list (send TF4 get-value) (send TF5 get-value) (send TF6 get-value) (send TF7 get-value) (send TF8 get-value) (send TF9 get-value))])
+                                          (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth opponent)))]))
+
+(send F1 show #T)
+
