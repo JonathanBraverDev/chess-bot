@@ -1181,7 +1181,7 @@
 
 (define (validInput? num1 num2 num3)
   (cond
-    ((or (not (exact-positive-integer? num1))
+    ((or (or (not (exact-positive-integer? num1)) (not (> 1 num1)))
          (not (exact-nonnegative-integer?  num2))
          (not (exact-positive-integer? num3))) #F)
     (else #T)))
@@ -1243,8 +1243,8 @@
 
 ;UI - its sooooooooooo bad
 (define F1 (new frame% [label "menu"]
-                [x 100]
-                [y 100]
+                [x 650]
+                [y 350]
                 [min-width 300]	 
                 [min-height 175]
                 [stretchable-width #F]	 
@@ -1298,15 +1298,15 @@
                 [init-value "0"]))
 
 ;genetic input
-(define MS1 (new message% [label "only positive integers are valid input"]
+(define MS1 (new message% [label "integers are valid input"]
                 	[auto-resize #T]
                         [parent P2]))
 
-(define TF1 (new text-field% [label "generation size"]
+(define TF1 (new text-field% [label "generation size (min is 2)"]
                 [parent P2]
                 [init-value ""]))
 
-(define TF2 (new text-field% [label "ammout of moves to look ahead"]
+(define TF2 (new text-field% [label "ammout of moves to look ahead (0 and up)"]
                 [parent P2]
                 [init-value ""]))
 
@@ -1376,11 +1376,22 @@
                                                (cond
                                                  ((or (not (exact-positive-integer? choise)) (not (exact-nonnegative-integer? depth)) (> choise 4)) (send MS2 set-label "wrong input") (sleep 1)
                                                                                                                                                     (send MS2 set-label "pick your opponent"))
-                                                 ((equal? choise 1) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters DB))))
-                                                 ((equal? choise 2) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters RB))))
-                                                 ((equal? choise 3) (send MS2 set-label (send F1 show #F) (play depth (bot-parameters B7))))
+                                                 ((equal? choise 1) (send F1 show #F) (display "playing VS: ") (displayln (bot-parameters DB)) (play depth (bot-parameters DB)))
+                                                 ((equal? choise 2) (send F1 show #F) (let ([opponent (bot-parameters RB)])
+                                                                                        (display "playing VS: ") (displayln opponent)
+                                                                                        (play depth opponent)))
+                                                 ((equal? choise 3) (send F1 show #F) (display "playing VS: ") (displayln (bot-parameters B7)) (play depth (bot-parameters B7)))
                                                   (else (send F1 delete-child P3)
-                                                        (send F1 add-child P4)))))])) 
+                                                        (send F1 add-child P4)))))]))
+
+(define BT5 (new button% [label "play"]
+                [parent P4]
+                [callback (lambda (a b) (let ([depth1 (string->number (send TF11 get-value))]
+                                              [depth2 (string->number (send TF10 get-value))]
+                                              [opponent (list (send TF4 get-value) (send TF5 get-value) (send TF6 get-value) (send TF7 get-value) (send TF8 get-value) (send TF9 get-value))])
+                                          (cond
+                                            ((not (equal? depth1 depth2)) (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth2 opponent))
+                                            (else (send F1 show #F) (display "playing VS: ") (displayln opponent) (play depth2 opponent)))))])) ;if the depth is dipperent, pick the new one
 
 (send F1 show #T)
 
